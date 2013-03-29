@@ -1,0 +1,3 @@
+We should have a comprehensive crafting system. Also cooking. So that we can
+make lasagna.
+
