@@ -1,0 +1,13 @@
+Quests should be varied and interesting. There should be quests that aren't
+just killing a lot of a specific creature.
+
+The location of the NPC (or event) that starts each quest should be easily
+accessible. Marked on minimap?
+
+Most quests should not be repeatable, but any quest that has multiple potential
+outcomes can be done more than once.
+
+There should be a quest log detailing what has happened in each quest that has
+been started, with completed quests listed separately.
+
+Badges for completed quests might be a nice touch.
