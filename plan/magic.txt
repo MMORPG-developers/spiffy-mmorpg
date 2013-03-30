@@ -1,0 +1,15 @@
+The magic system should be fairly simple, as overly complex rules tend to make
+players unhappy.
+
+To cast a spell, the player must first have learned it (from a master,
+spellbook, or quest), must have a high enough level to cast it, and must have
+enough mana.
+
+There should be many types of magic.
+- Combat spells:
+FIXME
+- Enchantments:
+FIXME
+- Teleportation:
+FIXME
+- FIXME
