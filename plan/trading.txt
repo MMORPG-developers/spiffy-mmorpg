@@ -13,6 +13,9 @@ The trading process should work as follows:
 - When both players are in the ready state, they are given the option to
   confirm or alter the deal.
     - If either player changes items, both are taken out of the ready state.
+    - In other words, if either player changes his/her list of items offered
+      then both players are taken out of the "ready" state (and therefore out
+      of the "committed" state as well).
 - Once both players have confirmed, the trade is completed.
 
 Players should also have the option to give items. This is very useful in
