@@ -1,0 +1,21 @@
+Players should be able to trade.
+Quest items should generally not be tradable.
+
+The trading process should work as follows:
+- Alice sends a trade request to Bob and waits.
+- Bob confirms trade request.
+    - If either Alice or Bob walks away before this stage is completed, cancel
+      the requests. 
+- Both players simultaneously add (or remove) items to their lists.
+- When each player is ready, he or she moves to the ready state.
+    - Changing the list of items offered immediately moves a player out of the
+      ready state.
+- When both players are in the ready state, they are given the option to
+  confirm or alter the deal.
+    - If either player changes items, both are taken out of the ready state.
+- Once both players have confirmed, the trade is completed.
+
+Players should also have the option to give items. This is very useful in
+combat.
+Giving items requires a confirmation from the receiver by default, but this can
+be changed (for individuals, for the party, and for the general population).
