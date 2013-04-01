@@ -1,0 +1,49 @@
+Spells:
+- Channel through weapon
+- Physical damage
+- Elemental attacks
+- Poison
+- Stun/Paralyze
+- Slow/Immobilize
+- Identify
+- Find traps (not disarm)
+- Teleportation
+- Levitation
+- Unlocking
+- Detection
+- Illusion
+- Light/Darkness
+- Homing attacks
+- Polyself
+- Summoning
+- Set/Disarm magic traps
+
+Prayers:
+- Murphy
+    - Probabilistic
+    - Any prayer might backfire or do nothing
+    - Expected value lower, max damage higher
+    - Turn undead
+- Smite
+- Healing
+- Protection
+- Channel through spells
+- Channel through other players' weapons
+- Blessed attacks
+- Turn undead
+- Holy possession
+- Detect/Remove curse
+
+Thievery:
+- Theft (from NPCs)
+- Picking locks
+- Finding/Disarming traps
+- Hiding/Sneaking (voluntary)
+- Poison
+- Setting traps
+- Backstabbing
+    - Extra damage if the monster can't see the player
+- Distraction
+- Trap evasion
+
+Climbing?
