@@ -1,0 +1,57 @@
+There should (of course) be a lot of competing deities. And none of them should
+be currently worshipped in the real world. In fact, probably none of them
+should be real at all. Although I have to admit, including Mjollnir would be
+kinda fun. Though probably not as much so as it sounds. Maybe a blatant ripoff?
+Also, most people don't consider Murphy to be a deity, so I think he's valid.
+
+Most deities have temples. Some just have scattered cultists. Murphy just has a
+casino. Its machines are random, but will never let you win enough to get back
+to the amount of money you had when you last walked in. (Yes, you can do a
+statistical test on this via double-or-nothing. If so, then you will learn with
+99.99% confidence what most people could have told you at the outset: if you
+gamble in a sacred space devoted to the deity of things going wrong, nothing
+good will come of it.)
+
+Each priest should have a certain amount of favor with each deity with which
+he/she has communicated (you learn about deities by talking to priests, either
+in temples or elsewhere). This favor ranges between -1 and 1 (?) -- positive
+indicates the deity is happy with you; negative indicates unhappy. A limited
+class of actions will increase or decrease this (for example, killing random
+townspeople decreases your favor with lawful deities). Also, quests might have
+alignments -- saving the princess enamors you with lawful deities, helping the
+necromancer enamors you with chaotic deities.
+
+Since the favor is capped, you can't get a deity arbitrarily mad at you.
+However, there are a few thresholds. For example, below a certain point the
+deity is considered angry with you, and you need to do a special ritual at a
+temple (or something like that) to get them to listen to you at all (that gets
+your favor to something negative but close to zero). There's probably a similar
+threshold on the positive side above which you can get away with some things
+against your alignment.
+
+You also have a limit to how much divine power can be channeled through you
+(which increases by basically the same means as your max mana -- with your
+level, maybe with some stat that affects prayer ability, et cetera). This is
+like mana except (1) it increases instead of decreasing, and (2) it might cool
+off exponentially (still undecided on this), whereas mana recharges linearly.
+
+Prayers should be a little bit more general than spells. Whereas small
+fireball, large fireball, burning hands, and cone of fire are separate spells,
+there's probably a single prayer "smite with fire". Its power depends on your
+level. At low levels, it might singe the monster's hair. At medium levels, it
+might ignite their limbs and cause serious damage. At high levels, it might
+summon a huge firestorm that brings down half of the dungeon and completely
+immolates and incinerates the monster, even if it's resistant to fire. The
+higher-level variants also involve channeling more divine power through you,
+so if you want a lower-level variant then you can request it. But see below.
+
+In order to use a type of prayer, you must (1) have positive favor with at
+least one deity who provides it, (2) be of high enough level to use it at all
+(some of them have minimum levels for even their minimum forms), and (3) not
+have had too much divine power channeled through you recently.
+
+Actually, you need to specify a deity when requesting a prayer. But the client
+will have a setting to choose randomly. Also, you can request a weaker version
+of a prayer (an effective casting level), but by default you cast it at your
+current level.
+
