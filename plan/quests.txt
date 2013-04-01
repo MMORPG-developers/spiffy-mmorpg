@@ -1,5 +1,6 @@
 Quests should be varied and interesting. There should be quests that aren't
-just killing a lot of a specific creature.
+just killing a lot of a specific creature. Also, multipart quests are a good
+thing. Assuming the parts are varied and interesting.
 
 The location of the NPC (or event) that starts each quest should be easily
 accessible. Marked on minimap?
