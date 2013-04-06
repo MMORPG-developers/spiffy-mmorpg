@@ -9,10 +9,43 @@ At the weak end, there should be monsters like rats and goblins that any player
 can kill with ease.
 
 Dragons and other extremely powerful monsters should exist, and they should be
-able to easily kill all but the most experienced adventurers.
+able to easily kill all but the most experienced adventurers. I mean seriously,
+there's a reason they're the one monster mentioned in the name "Dungeons and
+Dragons".
 
 Swarms of monsters should be able to communicate with each other and use team
 AI. They should attack or retreat all at once, move damaged monsters away from
 players, and heal each other when necessary. The communication should be
 visible to players unless monsters are telepathic or otherwise silent, and
-monsters might need to be named.
+monsters might need to be named. Such monster should, of course, be considered
+far more dangerous than their HP/armor/damage would suggest.
+
+
+Approximate ranking of monsters:
+(easier monsters)
+    * Livestock, peaceful real-world animals
+    * Rats, goblins, orcs, kobolds, bandits
+    * Scarier real-world animals (lions, tigers, bears)
+    * Lesser undead (zombies, skeletons, ghosts)
+    * Some fantastic animals (centaurs, etc.)
+    * Other D&D-style monsters (gelatinous icosahedrons, red slime, etc.)
+    * Other undead (shades, wights, ghouls)
+    * Baby dragons
+    * Scarier fantastic animals (hippogriffs)
+    * Greater undead (liches)
+    * Adult dragons
+    * 
+    * Really scary stuff
+    * 
+    * Ancient dragons
+    * A few named gods/demons
+(harder monsters)
+
+Unsorted monsters to add in:
+    * Titans
+    * Minotaurs
+    * Unicorns (probably rare)
+    * Demons
+    * Devils
+    * Drakes
+
