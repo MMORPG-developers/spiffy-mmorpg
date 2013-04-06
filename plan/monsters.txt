@@ -1,0 +1,18 @@
+Monsters should be varied in ways other than damage and hit points.
+
+Monsters should never attack players who are too strong, but might attack weak
+players for fun.
+
+Monsters can take up more than one space.
+
+At the weak end, there should be monsters like rats and goblins that any player
+can kill with ease.
+
+Dragons and other extremely powerful monsters should exist, and they should be
+able to easily kill all but the most experienced adventurers.
+
+Swarms of monsters should be able to communicate with each other and use team
+AI. They should attack or retreat all at once, move damaged monsters away from
+players, and heal each other when necessary. The communication should be
+visible to players unless monsters are telepathic or otherwise silent, and
+monsters might need to be named.
