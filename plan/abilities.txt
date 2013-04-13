@@ -23,16 +23,30 @@ Prayers:
     - Probabilistic
     - Any prayer might backfire or do nothing
     - Expected value lower, max damage higher
-    - Turn undead
+    - Turn undead (counter)clockwise
+        - "You invoke your god Murphy to turn the undead. The prayer backfires!
+          The undead turn in the other direction."
+    - Do something (totally random)
+        - Okay, I just turned your sword to a flower.
+        - Okay, I just dropped a whale on your party.
+        - Okay, I just cured your disease and gave it to a random other party
+          member.
+        - Okay, I just randomly redistributed the hitpoints of everyone in the
+          room. Also mana. Also buffs and debuffs. In fact, pretty much
+          everything except equipment and divine favor.
+        - Okay, you are now a chicken/weaker humanoid/stronger humanoid/dragon.
 - Smite
 - Healing
 - Protection
 - Channel through spells
 - Channel through other players' weapons
 - Blessed attacks
+- Increase damage, increase speed
 - Turn undead
 - Holy possession
 - Detect/Remove curse
+- Summon bigger fish
+    Okay fine, summon divine champion.
 
 Thievery:
 - Theft (from NPCs)
