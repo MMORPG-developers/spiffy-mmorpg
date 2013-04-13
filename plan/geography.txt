@@ -1,0 +1,25 @@
+The world should be loosely divided into regions.
+Regions should be made available to the player only after they have been
+populated with NPCs and quests.
+There should be plausible reasons for regions to be inaccessible prior to
+public release.
+
+Some races should start in different regions. Several should start in the same
+place, as the races have been in contact for a long time and the cultures have
+mixed.
+Other races should know of each other, but still live far apart. Trade should
+exist between such races.
+Some races should be in minimal contact with one another.
+
+Regions should be accessible by many different means:
+- Walking from one to another
+- Teleportation (after completing relevant tasks)
+- Stowing away in shipping containers
+- Using rope to climb down mountains
+- Paying tolls
+- Hiring gnomish hang-gliding service
+- Using secret knock on hollow mountain face
+- Human/Elven/Dwarvish cannonball
+- Boat/Mine cart/Camel caravan
+- Jumping through portals
+- Riding dragons
