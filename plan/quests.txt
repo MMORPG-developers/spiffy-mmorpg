@@ -9,6 +9,18 @@ Most quests should not be repeatable, but any quest that has multiple potential
 outcomes can be done more than once.
 
 There should be a quest log detailing what has happened in each quest that has
-been started, with completed quests listed separately.
+been started, with completed quests listed separately. It only tells you what
+people have told you, but it automatically picks up information even if the
+player doesn't recognize that it's related to the quest.
 
 Badges for completed quests might be a nice touch.
+
+Maybe have a couple races (?) that you need to learn their language before you
+can do their quests. You'd need to do a quest (or possibly buy a lesson?) to
+learn the language. This shouldn't be a common thing; in general everyone
+speaks common.
+
+Maybe a quest where you start by stowing away on a boat to get someplace far
+away and do a dangerous mission? Dangerous missions deep in enemy territory are
+always fun.
+
