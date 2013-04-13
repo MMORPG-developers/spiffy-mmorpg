@@ -46,4 +46,20 @@ Thievery:
 - Distraction
 - Trap evasion
 
+Stealth (possibly its own skill? We could make it a subskill of thievery, but I
+feel like one should be able to be stealthy without being good with traps or
+stealing.)
+- Can be turned on/off.
+- Monsters will have varying levels of hearing, so they might detect you or not
+  depending on your distance, your level of stealth, and their level. Possibly
+  also the ambient light/noise level, depending on how ambitious we're feeling.
+- Monsters that don't detect you will behave exactly as they would if you
+  weren't there. So if there are no other players around, they'll just sit
+  around doing nothing, and if there are other players around then they'll
+  react to those players but not to you.
+- If you attack a monster, it automatically detects you. If you attack from a
+  distance with a nondirectional spell (like summon firestorm) then the monster
+  doesn't know where you are but will still start flailing about trying to find
+  you.
+
 Climbing?
