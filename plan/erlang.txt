@@ -1,0 +1,17 @@
+Coding conventions? What are those?
+
+Type safety? Yay, atoms!
+
+How do you do ... in Erlang?
+ * 2-dimensional arrays
+ * File I/O
+
+There are going to be a bunch of creatures and objects (actors?) in our world
+that need to be referred to in multiple places (example: in the map and in the
+connection object for a player). Pointers aren't exactly something you do in
+functional programming, so here's what we'll do. For each of these things,
+we'll create a thread (process?) to store the state, and then we'll pass the
+PID around like a pointer. Anyone who wants to know anything about the object
+will simply send the thread a message saying (for example) "hey, how many hit
+points you got?", or "hey, got any pick-axes?" ("go fish.").
+
