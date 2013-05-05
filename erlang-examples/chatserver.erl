@@ -45,9 +45,9 @@ handshake_with_user(Socket, UserManager, MessageSender) ->
     % Assume this succeeds
     UserManager ! {self(), new_user, {User}},
     MessageSender ! {connection, {{User, Socket}}},
-    get_name_for_user(User, Socket, UserManager, MessageSender).
+    ask_user_for_name(User, Socket, UserManager, MessageSender).
 
-get_name_for_user(User, Socket, UserManager, MessageSender) ->
+ask_user_for_name(User, Socket, UserManager, MessageSender) ->
     ok = gen_tcp:send(Socket, "What is your name?\n"),
     {ok, Data} = gen_tcp:recv(Socket, 0),
     Name = strip_whitespace(binary_to_list(Data)),
@@ -55,11 +55,13 @@ get_name_for_user(User, Socket, UserManager, MessageSender) ->
     receive
         {ok, {change_name, {User, Name}}} ->
             ok = gen_tcp:send(Socket, "Welcome, " ++ Name ++ "!\n"),
+            Message = Name ++ " has joined the channel.\n",
+            MessageSender ! {special_message, {Message}},
             receive_messages(User, Socket, UserManager, MessageSender)
     ;
         {error, name_in_use, {change_name, {User, Name}}} ->
             ok = gen_tcp:send(Socket, "That name is already in use.\n"),
-            get_name_for_user(User, Socket, UserManager, MessageSender)
+            ask_user_for_name(User, Socket, UserManager, MessageSender)
     end.
 
 
@@ -89,8 +91,11 @@ get_name(User) ->
 receive_messages(User, Socket, UserManager, MessageSender) ->
     ok = receive_messages_helper(User, Socket, MessageSender),
     ok = gen_tcp:close(Socket),
+    Name = get_name(User),
     MessageSender ! {disconnection, {{User, Socket}}},
-    UserManager ! {self(), disconnection, {User}}.
+    UserManager ! {self(), disconnection, {User}},
+    Message = Name ++ " has left the channel.\n",
+    MessageSender ! {special_message, {Message}}.
 
 receive_messages_helper(User, Socket, MessageSender) ->
     case gen_tcp:recv(Socket, 0) of
@@ -161,8 +166,14 @@ send_messages_helper(Connections) ->
             % We don't add a newline here because currently the caller doesn't
             % remove the newline from the data returned by gen_tcp:recv.
             AnnotatedMessage = SenderName ++ ": " ++ Message,
-            ok = broadcast(Connections -- [SendingConnection],
-                           AnnotatedMessage),
+            ok = broadcast(Connections, AnnotatedMessage),
+            %%% Use this if you don't want people to see their own chats.
+            % ok = broadcast(Connections -- [SendingConnection],
+            %                AnnotatedMessage),
+            send_messages_helper(Connections)
+    ;
+        {special_message, {Message}} ->
+            ok = broadcast(Connections, Message),
             send_messages_helper(Connections)
     % TODO: When do we quit?
     end.
