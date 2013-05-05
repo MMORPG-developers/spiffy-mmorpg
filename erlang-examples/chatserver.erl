@@ -44,7 +44,7 @@ handshake_with_user(Socket, UserManager, MessageSender) ->
     User = spawn(?MODULE, maintain_user_state, []),
     % Assume this succeeds
     UserManager ! {self(), new_user, {User}},
-    MessageSender ! {new_connection, {{User, Socket}}},
+    MessageSender ! {connection, {{User, Socket}}},
     get_name_for_user(User, Socket, UserManager, MessageSender).
 
 get_name_for_user(User, Socket, UserManager, MessageSender) ->
@@ -77,6 +77,12 @@ maintain_user_state_helper({user, Name}) ->
             maintain_user_state_helper({user, NewName})
     end.
 
+get_name(User) ->
+    User ! {self(), get_name, {}},
+    receive
+        {ok, {get_name, {}}, {Name}} -> Name
+    end.
+
 
 % Listener
 
@@ -89,7 +95,8 @@ receive_messages(User, Socket, UserManager, MessageSender) ->
 receive_messages_helper(User, Socket, MessageSender) ->
     case gen_tcp:recv(Socket, 0) of
         {ok, Data} ->
-            MessageSender ! {broadcast_message, {{User, Socket}, Data}},
+            Message = binary_to_list(Data),
+            MessageSender ! {chat, {{User, Socket}, Message}},
             receive_messages_helper(User, Socket, MessageSender)
     ;
         {error, closed} ->
@@ -128,11 +135,11 @@ manage_users_helper(Users) ->
 
 is_name_in_use(_Name, []) -> false;
 is_name_in_use(Name, [User|OtherUsers]) ->
-    User ! {self(), get_name, {}},
-    receive
-        {ok, {get_name, {}}, {Name}} -> true
+    case get_name(User) of
+        Name ->
+            true
     ;
-        {ok, {get_name, {}}, {UserName}} when UserName /= Name ->
+        OtherName when OtherName /= Name ->
             is_name_in_use(Name, OtherUsers)
     end.
 
@@ -143,22 +150,27 @@ send_messages() -> send_messages_helper([]).
 
 send_messages_helper(Connections) ->
     receive
-        {new_connection, {NewConnection}} ->
+        {connection, {NewConnection}} ->
             send_messages_helper([NewConnection|Connections])
     ;
         {disconnection, {Disconnected}} ->
             send_messages_helper(Connections -- [Disconnected])
     ;
-        {broadcast_message, {_SendingConnection, Data}} ->
-            ok = broadcast(Connections, Data),
+        {chat, {SendingConnection = {Sender, _SenderSocket}, Message}} ->
+            SenderName = get_name(Sender),
+            % We don't add a newline here because currently the caller doesn't
+            % remove the newline from the data returned by gen_tcp:recv.
+            AnnotatedMessage = SenderName ++ ": " ++ Message,
+            ok = broadcast(Connections -- [SendingConnection],
+                           AnnotatedMessage),
             send_messages_helper(Connections)
     % TODO: When do we quit?
     end.
 
-broadcast([], _Data) -> ok;
-broadcast([{_User, Socket} | OtherConnections], Data) ->
-    ok = gen_tcp:send(Socket, Data),
-    broadcast(OtherConnections, Data).
+broadcast([], _Message) -> ok;
+broadcast([{_User, Socket} | OtherConnections], Message) ->
+    ok = gen_tcp:send(Socket, Message),
+    broadcast(OtherConnections, Message).
 
 
 % Miscellaneous utilities
@@ -167,6 +179,9 @@ broadcast([{_User, Socket} | OtherConnections], Data) ->
 % not other whitespace (tabs and newlines).
 % I guess this is probably related to the fact that Erlang isn't exactly the
 % best language for string processing.
+% Credit to
+%   http://stackoverflow.com/questions/12794358/how-to-strip-all-blank-characters-in-a-string-in-erlang
+% for the regular expressions.
 strip_whitespace(String, left) ->
     re:replace(String, "^\\s+", "", [global,{return,list}]);
 strip_whitespace(String, right) ->
@@ -177,92 +192,3 @@ strip_whitespace(String, both) ->
 
 strip_whitespace(String) -> strip_whitespace(String, both).
 
-
-
-
-
-
-
-
-%%% 
-%%% 
-%%% 
-%%% 
-%%% 
-%%% 
-%%% 
-%%% 
-%%% 
-%%% 
-%%% % ???
-%%% 
-%%% user_manager() -> user_manager_helper([]).
-%%% 
-%%% user_manager_helper(Users) ->
-%%%     receive
-%%%         {connection, NewUser} ->
-%%%             user_manager_helper([NewUser|Users])
-%%%     ;
-%%%         {disconnection, LostUser} ->
-%%%             user_manager_helper(Users -- [LostUser])
-%%%     % TODO: Infinite loop if none of these happens? When do we quit?
-%%%     end.
-%%% 
-%%% 
-%%% ask_for_name(Socket) ->
-%%%     ok = gen_tcp:send(Socket, "What is your name?~n"),
-%%%     {ok, Data} = gen_tcp:recv(Socket, 0),
-%%%     binary:bin_to_list(Data).
-%%% 
-%%% new_user(Socket, UserManager) ->
-%%%     Pid = % user_manager(),
-%%%     UserManager ! {connection, Pid},
-%%%     Name = ask_for_name(Socket),
-%%% 
-%%% 
-%%% % Actor state holder
-%%% 
-%%% 
-%%% 
-%%% 
-%%% % Receiver threads
-%%% 
-%%% receivemessages(Sock, Sender) ->
-%%%     ok = receivemessages_helper(Sock, Sender),
-%%%     ok = gen_tcp:close(Sock),
-%%%     Sender ! {disconnection, {self(), Sock}}.
-%%% 
-%%% receivemessages_helper(Sock, Sender) ->
-%%%     case gen_tcp:recv(Sock, 0) of
-%%%         {ok, Data} ->
-%%%             Sender ! {newmessage, {self(), Sock}, Data},
-%%%             receivemessages_helper(Sock, Sender)
-%%%     ;
-%%%         {error, closed} ->
-%%%             ok
-%%%     end.
-%%% 
-%%% 
-%%% % Sender thread
-%%% 
-%%% sendmessages() -> sendmessages_helper([]).
-%%% 
-%%% sendmessages_helper(Connections) ->
-%%%     receive
-%%%         {connection, NewConnection} ->
-%%%             sendmessages_helper([NewConnection|Connections])
-%%%     ;
-%%%         {disconnection, Disconnected} ->
-%%%             sendmessages_helper(Connections -- [Disconnected])
-%%%     ;
-%%%         {newmessage, _SendingConnection, Data} ->
-%%%             ok = broadcast(Connections, Data),
-%%%             sendmessages_helper(Connections)
-%%%     % TODO: Infinite loop if none of these happens? When do we quit?
-%%%     end.
-%%% 
-%%% broadcast([], _Data) -> ok;
-%%% broadcast([{_Pid, Sock} | Connections], Data) ->
-%%%     ok = gen_tcp:send(Sock, Data),
-%%%     broadcast(Connections, Data).
-%%% 
