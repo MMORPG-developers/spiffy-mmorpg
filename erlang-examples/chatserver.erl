@@ -3,6 +3,7 @@
 % TODO: Look into gen_tcp:shutdown.
 % TODO: When do we quit?
 % TODO: Check for errors on spawns and message sendings?
+% TODO: Links might be nice
 
 -export([
     % Functions actually used by outside code
