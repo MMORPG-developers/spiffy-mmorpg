@@ -1,0 +1,8 @@
+This might be useful (it's the C++ equivalent of `finally`):
+    http://www.stroustrup.com/bs_faq2.html#finally
+
+Wait, can you do reference counting in C++? Do we want to?
+
+What sorts of things are we going to throw as exceptions? Do we need to make
+a subclass of std::exception for every case, or can we use a few builtin ones?
+
