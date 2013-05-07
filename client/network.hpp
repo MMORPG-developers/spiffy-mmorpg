@@ -4,6 +4,11 @@
 #include <string>
 #include <exception>
 
+
+// Custom exception class -- should probably be moved to its own file.
+// Alternatively, we could #include <system_error>, but that requires the
+// new C++11 standard, which is apparently experimental, at least in GCC.
+
 class SystemCallException : public std::exception {
 public:
     // Creates an exception object for the specified value of errno.
@@ -25,6 +30,10 @@ private:
 };
 
 
+
+// Socket class -- a wrapper around the C library's socket functions that
+// throws exceptions instead of returning -1 and setting errno.
+
 class Socket {
 public:
     Socket(const char *server, const char *port);
@@ -44,3 +53,4 @@ private:
 };
 
 #endif // _NETWORK_HPP_INCLUDED
+
