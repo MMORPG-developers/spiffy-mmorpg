@@ -140,7 +140,7 @@ string Socket::receive(size_t max_length)
     // Just to be absolutely sure our string is null-terminated.
     buff[max_length] = '\0';
     
-    string ret(buff);
+    string ret(buff, num_bytes_read);
     delete [] buff;
     return ret;
 }
