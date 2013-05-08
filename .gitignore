@@ -4,3 +4,6 @@ deps
 *.beam
 *.plt
 client/client
+client/Makefile
+client/client.pro
+
