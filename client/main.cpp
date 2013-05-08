@@ -11,21 +11,26 @@ const char *SERVER = "localhost";
 // string over the network anyway, but still... seriously guys?
 const char *PORT = "6667";
 
+void run()
+{
+    Socket sock(SERVER, PORT);
+    sock.send("Why hello there, Mr. server!\n");
+    string response = sock.receive(4096);
+    
+    cout << "Received \"\"\""
+         << response
+         << "\"\"\" from server."
+         << endl;
+    
+    cout << "Yay, server/client communications work!" << endl;
+}
+
 int main(void)
 {
     try {
-        Socket sock(SERVER, PORT);
-        sock.send("Why hello there, Mr. server!\n");
-        string response = sock.receive(4096);
-        
-        cout << "Received \"\"\""
-             << response
-             << "\"\"\" from server."
-             << endl;
-        
-        cout << "Yay, server/client communications work!" << endl;
+        run();
     }
-    catch (SystemCallException *err) {
+    catch (exception *err) {
         cerr << err->what() << endl;
     }
     
