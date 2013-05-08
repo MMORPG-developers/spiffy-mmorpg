@@ -1,2 +1,1 @@
-c(test).
-test:wait_for_connections().
+mapserver:main().
