@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const char *SERVER = "192.168.2.2";
+const char *SERVER = "localhost";
 // The port is specified as a string containing its decimal representation, not
 // as the number itself. Presumably because the port needs to be sent as a
 // string over the network anyway, but still... seriously guys?
