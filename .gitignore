@@ -3,7 +3,13 @@ deps
 *.o
 *.beam
 *.plt
+
+*.pro
+moc_*
+
 client/client
 client/Makefile
-client/client.pro
+
+qt-examples/snet/Makefile
+qt-examples/snet/snet
 
