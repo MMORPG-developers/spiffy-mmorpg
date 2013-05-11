@@ -1,0 +1,7 @@
+#!/bin/bash
+
+make clean
+rm -f client
+rm -f Makefile
+rm -f client.pro
+
