@@ -2,6 +2,7 @@
 #define _NETCLIENT_HPP_INCLUDED
 
 #include <Qt>
+#include <QString>
 #include <QWidget>
 #include <QTextEdit>
 #include <QLineEdit>
@@ -20,7 +21,7 @@ class NetClient : public QWidget {
         void textSubmitted(QString s);
     
     public slots:
-        void appendText(const QString s);
+        void appendText(QString s);
     
     private slots:
         void readyToSubmit();

@@ -37,7 +37,7 @@ NetClient::~NetClient()
     delete sub_layout;
 }
 
-void NetClient::appendText(const QString s)
+void NetClient::appendText(QString s)
 {
     history->append(s);
 }
