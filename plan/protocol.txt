@@ -1,0 +1,62 @@
+    [simultaneously]
+Client: Hi, I'm a client of version ___.
+Server: Hi, I'm a server of version ___.
+    [er, does the client actually need to know the server's version?]
+
+    [if version mismatch]
+Server: You're too old/new. I can't handle you. Bye now.
+
+    [login, first time]
+Client: Hey, is this name taken?
+Server: Nope.
+[server reserves the name until that connection dies or that player logs in]
+Client: Hey, I want to create a new character with this name and this password
+        (encrypted, obviously)
+
+[character creation happens]
+
+
+    [login, subsequent time]
+Client: Hey, is this name taken?
+Server: Yes.
+Client: Hey, I want to login with this name and this password
+        (encrypted, obviously)
+Server: Hey, that's the wrong password, you bozo!
+Client: Hey, I want to login with this name and this other password
+        (encrypted, obviously)
+Server: Okay.
+
+
+
+
+
+And then the server sends your inventory and surroundings and a ton of other
+stuff.
+
+
+
+
+    [main loop]
+
+The two send things asynchronously, with no particular relation between the
+two.
+Client sends commands.
+Server can send:
+    You're in a completely new map
+    Scroll the map in this direction
+    Update square (because it's changed)
+    Hide square (mark it as potentially out of date)
+Client can request map, or more info about a square
+
+
+
+
+
+
+
+
+For the first iteration (existentialist's nightmare),
+Server can send:
+    Here's the map
+    Now you're at (x, y)
+
