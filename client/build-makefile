@@ -3,5 +3,4 @@
 qmake -project
 cat qmake-additional-configuration >> client.pro
 qmake -makefile
-make
 
