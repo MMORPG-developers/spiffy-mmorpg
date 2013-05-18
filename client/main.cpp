@@ -10,9 +10,9 @@
 
 // using namespace std;
 
-const char *SERVER = "crossfire.metalforge.net";
-// const char *SERVER = "localhost";
-const int PORT = 13327;
+// const char *SERVER = "crossfire.metalforge.net";
+const char *SERVER = "localhost";
+const int PORT = 6667;
 
 int main(int argc, char **argv)
 {
