@@ -1,45 +1,37 @@
-#include <iostream>
-#include <string>
+// #include <iostream>
+// #include <string>
 
-#include "network.hpp"
+#include "snet-client.hpp"
+#include "server-connection.hpp"
 
-using namespace std;
+#include <QApplication>
+#include <QObject>
+#include <QString>
 
-const char *SERVER = "localhost";
-// The port is specified as a string containing its decimal representation, not
-// as the number itself. Presumably because the port needs to be sent as a
-// string over the network anyway, but still... seriously guys?
-const char *PORT = "6667";
+// using namespace std;
 
-void run()
+const char *SERVER = "crossfire.metalforge.net";
+// const char *SERVER = "localhost";
+const int PORT = 13327;
+
+int main(int argc, char **argv)
 {
-    Socket sock(SERVER, PORT);
-    sock.send("\0\0\0\4", 4); // 4 bytes
-    sock.send("asdf", 4); // name
-    sock.send("\0\0\0\1", 4); // 1 byte
-    sock.send("\1", 1); // request map
-    sock.receive(1); // here's a map
-    sock.receive(4); // rows
-    sock.receive(4); // columns
-    string response = sock.receive(4096); // the map
+    QApplication app(argc, argv);
     
-    cout << "Received \"\"\""
-         << response
-         << "\"\"\" from server."
-         << endl;
+    SNetClient widget;
+    ServerConnection connection(SERVER, PORT);
     
-    cout << "Yay, server/client communications work!" << endl;
-}
-
-int main(void)
-{
-    try {
-        run();
-    }
-    catch (exception *err) {
-        cerr << err->what() << endl;
-    }
+    QObject::connect(&widget, SIGNAL(textSubmitted(QString)),
+                     &connection, SLOT(sendText(QString)));
+    QObject::connect(&connection, SIGNAL(textArrived(QString)),
+                     &widget, SLOT(appendText(QString)));
     
-    return 0;
+    // TODO: Add a handler for when the user closes the window.
+    // TODO: Add a handler for errors ocurring (this should be handled by a
+    // top-level Client class, which will need to be a Qt object).
+    
+    widget.show();
+    
+    return app.exec();
 }
 
