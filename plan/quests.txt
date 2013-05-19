@@ -24,3 +24,6 @@ Maybe a quest where you start by stowing away on a boat to get someplace far
 away and do a dangerous mission? Dangerous missions deep in enemy territory are
 always fun.
 
+You find a key in a garbage can. You ask a nearby magician about it, and he
+tells you there's something evil about it. You need to figure out where the key
+can be used.
