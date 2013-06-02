@@ -1,7 +1,12 @@
-all: mapserver.beam array_2d.beam socket.beam
+all: existentialist_server.beam
+
+clean:
+	rm *.beam
+
+.phony: all clean
 
 %.beam: %.erl
 	erlc $<
 
-.phony: all
+existentialist_server.beam: array_2d.beam client_connection.beam
 

@@ -73,6 +73,7 @@ void ServerConnection::sendText(QString text)
     
     int len = data.size();
     
+    // FIXME: Don't hardcode header size.
     if (len > 0xffff) {
         emit error(QString("Too much data to send at once."));
         return;
