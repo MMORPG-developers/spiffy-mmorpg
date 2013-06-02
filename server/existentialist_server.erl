@@ -163,9 +163,11 @@ manage_information_helper(MapManager, TagDict) ->
 % cell visible from the given position.
 % Map is the PID of the map process.
 % ObserverPosition is of the form {Row, Column}.
-get_all_visible_map_cells(_MapManager, ObserverPosition) ->
-    % FIXME: Let people actually see things. For now, let them see everything.
-    [ObserverPosition].
+get_all_visible_map_cells(MapManager, _ObserverPosition) ->
+    {NumberOfRows, NumberOfColumns} = get_map_size(MapManager),
+    AllRows = lists:seq(0, NumberOfRows - 1),
+    AllColumns = lists:seq(0, NumberOfColumns - 1),
+    [{Row, Column} || Row <- AllRows, Column <- AllColumns].
 
 % FIXME: Use better names.
 send_all_map_cells_info_to(_Recipient, [], _MapManager, _Origin) -> ok;
@@ -259,6 +261,13 @@ get_map_cell(MapManager, Position) ->
     receive
         {ok, {request_cell, {Position}}, Cell} ->
             Cell
+    end.
+
+get_map_size(MapManager) ->
+    MapManager ! {self(), request_size, {}},
+    receive
+        {ok, {request_size, {}}, Size} ->
+            Size
     end.
 
 
@@ -425,6 +434,7 @@ encode_update_map_cell(RelativePosition, CellInfo) ->
         false ->
             ?FLOOR_CODE
     end,
+    % FIXME: Also list the actors in this cell.
     <<Prefix/binary, Separator/binary, EncodedHorizontal/binary,
         Separator/binary, EncodedVertical/binary, Separator/binary,
         EncodedCell/binary>>.
