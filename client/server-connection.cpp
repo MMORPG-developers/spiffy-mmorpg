@@ -20,9 +20,20 @@ ServerConnection::ServerConnection(const QString &server, quint16 port)
 
 ServerConnection::~ServerConnection()
 {
-    socket->waitForDisconnected(-1);
-    socket->close();
+    // Calling socket->disconnectFromHost() will try to write all remaining
+    // data to the socket before closing it. Calling abort() will immediately
+    // close it. I don't think disconnectFromHost() blocks until the socket is
+    // disconnected, so if we used it we'd have to manually wait until the
+    // socket is disconnected.
+    // I'm not sure which one is the better idea, but calling
+    // disconnectFromHost() in a destructor seems a little unwise (it could
+    // potentially take a while).
+    socket->abort();
+    // socket->disconnectFromHost();
     
+    // If we do this immediately after calling disconnectFromHost(), it defeats
+    // the purpose (because it doesn't let disconnectFromHost() take the time
+    // to write pending data).
     delete socket;
 }
 
@@ -36,8 +47,9 @@ void ServerConnection::writeAll(const QByteArray &data)
         int bytes_written = socket->write(bytes, len);
         
         if (bytes_written < 0) {
-            // TODO: Get an explanatory error message, as from perror().
-            emit error(QString("Write failed."));
+            QString error_message("Write failed: ");
+            error_message.append(socket->errorString());
+            emit error(error_message);
             return;
         }
         

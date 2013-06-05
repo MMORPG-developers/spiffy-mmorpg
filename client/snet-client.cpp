@@ -30,6 +30,8 @@ SNetClient::~SNetClient()
     delete history;
     delete input;
     delete submit;
+    
+    delete layout;
 }
 
 void SNetClient::appendText(QString s)
