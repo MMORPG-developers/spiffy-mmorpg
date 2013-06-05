@@ -1,6 +1,6 @@
 
-QMAKE_CFLAGS *= -Wall -Wextra -Wno-deprecated -pedantic
-QMAKE_CXXFLAGS *= -Wall -Wextra -Wno-deprecated -pedantic
+QMAKE_CFLAGS *= -Wall -Wextra -pedantic -Wno-long-long
+QMAKE_CXXFLAGS *= -Wall -Wextra -pedantic -Wno-long-long
 
 QT *= network
 
