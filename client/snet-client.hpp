@@ -7,8 +7,7 @@
 #include <QTextEdit>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
+#include <QGridLayout>
 
 class SNetClient : public QWidget {
     Q_OBJECT
@@ -31,8 +30,7 @@ class SNetClient : public QWidget {
         QLineEdit *input;
         QPushButton *submit;
         
-        QVBoxLayout *main_layout;
-        QHBoxLayout *sub_layout;
+        QGridLayout *layout;
 };
 
 #endif // _SNET_CLIENT_HPP_INCLUDED
