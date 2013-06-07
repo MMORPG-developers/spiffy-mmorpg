@@ -9,16 +9,13 @@ SNetClient::SNetClient(QWidget *parent, Qt::WindowFlags flags)
     
     history->setReadOnly(true);
     
-    main_layout = new QVBoxLayout(this);
-    sub_layout = new QHBoxLayout(this);
+    layout = new QGridLayout(this);
     
-    sub_layout->addWidget(input);
-    sub_layout->addWidget(submit);
+    layout->addWidget(history, 0, 0, 1, 2);
+    layout->addWidget(input, 1, 0);
+    layout->addWidget(submit, 1, 1);
     
-    main_layout->addWidget(history);
-    main_layout->addLayout(sub_layout);
-    
-    setLayout(main_layout);
+    setLayout(layout);
     
     QObject::connect(submit, SIGNAL(clicked()), this, SLOT(readyToSubmit()));
     QObject::connect(input, SIGNAL(returnPressed()),
@@ -34,7 +31,7 @@ SNetClient::~SNetClient()
     delete input;
     delete submit;
     
-    delete sub_layout;
+    delete layout;
 }
 
 void SNetClient::appendText(QString s)
