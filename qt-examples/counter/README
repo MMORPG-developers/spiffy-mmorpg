@@ -1,0 +1,35 @@
+README
+
+This example creates an application with a single window. The window has a
+click button, a number, and a quit button. The number shows how many times the
+click button has been clicked.
+
+It will build properly on both Linux and OS X.
+
+To run:
+./build-makefile
+make
+
+On OS X:
+You can now run counter as an app by double-clicking on the Application file
+created in this folder.
+
+On Linux:
+./counter
+
+To remove files:
+./clean-all
+
+Dependencies:
+Qt4
+
+Included files:
+build-makefile
+clean-all
+counter.cpp
+counter.hpp
+main.cpp
+qmake-additional-configuration
+
+Cecily Hunt
+June 8, 2013

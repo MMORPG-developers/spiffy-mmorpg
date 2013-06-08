@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Cecily Hunt
+# June 8, 2013
+
+# This script prints the OS of the machine it's run on (Mac and Linux only).
+# Note that for unknown reasons Mac OS is sometimes called Darwin.
+
+unamestr=`uname`
+if [[ "$unamestr" == 'Darwin' ]];  then
+	echo OSX
+elif [[ "$unamestr" == 'Linux' ]]; then
+	echo Linux
+fi
