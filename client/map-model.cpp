@@ -38,6 +38,12 @@ void MapModel::setCellAt(int x, int y, const MapCell & new_cell)
     cells[index] = new_cell;
 }
 
+void MapModel::movePlayer(int delta_x, int delta_y)
+{
+    reference_x += delta_x;
+    reference_y += delta_y;
+}
+
 int MapModel::convertCoordinates(int x, int y) const
 {
     int absolute_x = reference_x + x;

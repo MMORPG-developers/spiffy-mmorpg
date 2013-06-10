@@ -1,7 +1,5 @@
 #include "map-client.hpp"
 
-// #include <iostream>
-
 #include <QRegExp>
 #include <QString>
 #include <QStringList>
@@ -48,11 +46,62 @@ void MapClient::handleServerPacket(QString packet)
         view->updateCellAt(x, y);
     }
     else if (words[0] == "move_in_map") {
-        throw "Not implemented yet....";
+        int delta_x = words[1].toInt();
+        int delta_y = words[2].toInt();
+        
+        model->movePlayer(delta_x, delta_y);
+        view->movePlayer(delta_x, delta_y);
     }
     else {
         // FIXME: What did I tell you about throwing strings?
         throw "Unrecognized command from server";
     }
+}
+
+void MapClient::keyPressEvent(QKeyEvent *event)
+{
+    switch (event->key()) {
+        case Qt::Key_H:
+            sendWalkCommand("west");
+            break;
+        
+        case Qt::Key_J:
+            sendWalkCommand("south");
+            break;
+        
+        case Qt::Key_K:
+            sendWalkCommand("north");
+            break;
+        
+        case Qt::Key_L:
+            sendWalkCommand("east");
+            break;
+        
+        case Qt::Key_Y:
+            sendWalkCommand("northwest");
+            break;
+        
+        case Qt::Key_U:
+            sendWalkCommand("northeast");
+            break;
+        
+        case Qt::Key_B:
+            sendWalkCommand("southwest");
+            break;
+        
+        case Qt::Key_N:
+            sendWalkCommand("southeast");
+            break;
+        
+        default:
+            QFrame::keyPressEvent(event);
+            break;
+    }
+}
+
+void MapClient::sendWalkCommand(QString direction)
+{
+    QString command = "action walk " + direction;
+    emit sendServerCommand(command);
 }
 

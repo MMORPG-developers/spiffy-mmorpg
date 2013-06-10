@@ -4,6 +4,7 @@
 #include <Qt>
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QKeyEvent>
 
 #include "map-view.hpp"
 #include "map-model.hpp"
@@ -14,6 +15,12 @@ class MapClient : public QFrame {
     public:
         MapClient(unsigned int width, unsigned int height);
         ~MapClient();
+    
+    protected:
+        virtual void keyPressEvent(QKeyEvent *event);
+    
+    private:
+        void sendWalkCommand(QString direction);
     
     signals:
         void sendServerCommand(QString command);
