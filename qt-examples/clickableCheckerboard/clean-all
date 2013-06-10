@@ -1,0 +1,12 @@
+#!/bin/bash
+
+make clean
+rm -f Makefile
+rm -f clickableCheckerboard.pro
+
+unamestr=`uname`
+if [[ "$unamestr" == 'Darwin' ]];  then
+	rm -rf clickableCheckerboard.app
+elif [[ "$unamestr" == 'Linux' ]]; then
+	rm -f clickableCheckerboard
+fi
