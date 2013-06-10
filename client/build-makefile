@@ -2,5 +2,11 @@
 
 qmake -project
 cat qmake-additional-configuration >> client.pro
-qmake -makefile
+
+unamestr=`uname`
+if [[ "$unamestr" == 'Darwin' ]]; then
+    qmake -makefile -spec macx-g++
+elif [[ "$unamestr" == 'Linux' ]]; then
+    qmake -makefile
+fi
 

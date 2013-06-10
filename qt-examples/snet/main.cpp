@@ -7,11 +7,25 @@
 #include <QObject>
 #include <QString>
 
+#include <iostream>
+
 const char *SERVER = "localhost";
 const int PORT = 6667;
 
 int main(int argc, char **argv)
 {
+    std::cerr << "Don't use this program." << std::endl;
+    std::cerr << "By default it connects to a local spiffy server,"
+        << std::endl;
+    std::cerr << "but it doesn't communicate using the right protocol."
+        << std::endl;
+    
+    return 1;
+    
+    
+    // Never reached
+    
+    
     QApplication app(argc, argv);
     
     NetClient widget;
