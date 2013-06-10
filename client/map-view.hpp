@@ -20,7 +20,7 @@ class MapView : public QFrame {
          * violating MVC.
          */
         MapView(unsigned int width, unsigned int height,
-                const MapModel *model);
+                const MapModel *model, QWidget *parent = NULL);
         ~MapView();
         
         void movePlayer(int delta_x, int delta_y);

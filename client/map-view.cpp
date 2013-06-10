@@ -24,7 +24,8 @@ static QPixmap getImage(MapCell cell)
 
 
 MapView::MapView(unsigned int width, unsigned int height,
-                 const MapModel *model)
+                 const MapModel *model, QWidget *parent)
+    : QFrame(parent)
 {
     // FIXME: Colon initializer?
     // FIXME: Name collision
@@ -64,8 +65,11 @@ MapView::~MapView()
 
 void MapView::movePlayer(int delta_x, int delta_y)
 {
-    player_x += delta_x;
-    player_y += delta_y;
+    (void) delta_x;
+    (void) delta_y;
+    
+    // player_x += delta_x;
+    // player_y += delta_y;
     
     updateAllCells();
 }

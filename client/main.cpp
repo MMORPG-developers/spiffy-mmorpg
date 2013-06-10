@@ -3,8 +3,7 @@
 #include "snet-client.hpp"
 #include "server-connection.hpp"
 
-#include "map-model.hpp"
-#include "map-view.hpp"
+#include "map-client.hpp"
 
 #include <QApplication>
 #include <QObject>
@@ -19,10 +18,9 @@ int main(int argc, char **argv)
     try {
         QApplication app(argc, argv);
         
-        MapModel model;
-        MapView view(25, 25, &model);
+        MapClient widget(25, 25);
         
-        view.show();
+        widget.show();
         
      // SNetClient widget;
      // ServerConnection connection(SERVER, PORT);
