@@ -1,0 +1,12 @@
+#!/bin/bash
+
+make clean
+rm -f Makefile
+rm -f checkerboard.pro
+
+unamestr=`uname`
+if [[ "$unamestr" == 'Darwin' ]];  then
+	rm -rf checkerboard.app
+elif [[ "$unamestr" == 'Linux' ]]; then
+	rm -f checkerboard
+fi
