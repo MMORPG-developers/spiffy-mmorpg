@@ -85,8 +85,7 @@ void ServerConnection::sendText(QString text)
     
     int len = data.size();
     
-    // FIXME: Don't hardcode header size.
-    if (len > 0xffff) {
+    if (len >= (1 << (HEADER_SIZE * 8))) {
         emit error(QString("Too much data to send at once."));
         return;
     }
@@ -105,7 +104,7 @@ void ServerConnection::sendText(QString text)
 
 void ServerConnection::socketReadyToRead()
 {
-    // TODO: Finite loop?
+    // FIXME: Put a useful condition on this loop?
     while (true) {
         QByteArray header = socket->peek(HEADER_SIZE);
         if (header.size() != HEADER_SIZE) {

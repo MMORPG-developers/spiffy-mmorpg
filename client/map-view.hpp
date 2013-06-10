@@ -25,7 +25,8 @@ class MapView : public QFrame {
         
         void movePlayer(int delta_x, int delta_y);
         
-        void updateCellAt(int x, int y);
+        void updateRelativeCell(int relative_x, int relative_y);
+        void updateAbsoluteCell(int absolute_x, int absolute_y);
         void updateAllCells();
     
     private:
@@ -33,7 +34,6 @@ class MapView : public QFrame {
         // it makes it really easy for the caller to (though technically it's
         // not the object they're modifying...).
         QLabel * getImageWidgetAt(int x, int y);
-        // int convertCoordinates(int x, int y) const;
     
     private:
         unsigned int width;

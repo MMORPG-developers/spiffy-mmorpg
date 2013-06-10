@@ -25,10 +25,6 @@ MapClient::~MapClient()
 
 void MapClient::handleServerPacket(QString packet)
 {
-    // std::cerr << "Packet from server: '" << packet.toStdString() << "'" << std::endl;
-    
-    // FIXME: Write and use helper functions.
-    
     QRegExp space("\\s+");
     
     QStringList words = packet.split(space, QString::SkipEmptyParts);
@@ -43,7 +39,7 @@ void MapClient::handleServerPacket(QString packet)
         MapCell cell = is_wall? WALL : FLOOR;
         
         model->setCellAt(x, y, cell);
-        view->updateCellAt(x, y);
+        view->updateRelativeCell(x, y);
     }
     else if (words[0] == "move_in_map") {
         int delta_x = words[1].toInt();
@@ -53,7 +49,7 @@ void MapClient::handleServerPacket(QString packet)
         view->movePlayer(delta_x, delta_y);
     }
     else {
-        // FIXME: What did I tell you about throwing strings?
+        // FIXME: Don't throw strings.
         throw "Unrecognized command from server";
     }
 }

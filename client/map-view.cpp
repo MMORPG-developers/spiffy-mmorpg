@@ -74,15 +74,15 @@ void MapView::movePlayer(int delta_x, int delta_y)
     updateAllCells();
 }
 
-void MapView::updateCellAt(int x, int y)
+void MapView::updateRelativeCell(int relative_x, int relative_y)
 {
-    QLabel *image_widget = getImageWidgetAt(x, y);
+    QLabel *image_widget = getImageWidgetAt(relative_x, relative_y);
     
     if (image_widget) {
-        MapCell cell = model->getCellAt(x, y);
+        MapCell cell = model->getCellAt(relative_x, relative_y);
         
         // FIXME: This is the server's job, not ours.
-        if (x == 0 && y == 0) {
+        if (relative_x == 0 && relative_y == 0) {
             cell = PLAYER;
         }
         
@@ -91,12 +91,16 @@ void MapView::updateCellAt(int x, int y)
     }
 }
 
+void MapView::updateAbsoluteCell(int absolute_x, int absolute_y)
+{
+    updateRelativeCell(absolute_x - player_x, absolute_y - player_y);
+}
+
 void MapView::updateAllCells()
 {
     for (unsigned int x = 0; x < width; ++x) {
         for (unsigned int y = 0; y < height; ++y) {
-            // FIXME: How the heck are we indexing?
-            updateCellAt(x - player_x, y - player_y);
+            updateAbsoluteCell(x, y);
         }
     }
 }
