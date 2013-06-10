@@ -3,8 +3,10 @@
 MapModel::MapModel()
 {
     // FIXME: Magic numbers
-    reference_x = 12;
-    reference_y = 12;
+    reference_x = 5;
+    reference_y = 5;
+    
+    outside_cell = UNKNOWN;
     
     for (int i=0; i<25*25; ++i) {
         cells[i] = UNKNOWN;
@@ -18,9 +20,15 @@ MapModel::~MapModel()
 
 const MapCell & MapModel::getCellAt(int x, int y) const
 {
-    int index = convertCoordinates(x, y);
-    
-    return cells[index];
+    // FIXME: Don't use try/catch like this. Please. It's terrible.
+    try {
+        int index = convertCoordinates(x, y);
+        
+        return cells[index];
+    }
+    catch (...) {
+        return outside_cell;
+    }
 }
 
 void MapModel::setCellAt(int x, int y, const MapCell & new_cell)

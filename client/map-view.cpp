@@ -77,9 +77,16 @@ void MapView::movePlayer(int delta_x, int delta_y)
 void MapView::updateCellAt(int x, int y)
 {
     QLabel *image_widget = getImageWidgetAt(x, y);
-    MapCell cell = model->getCellAt(x, y);
-    QPixmap image = getImage(cell);
-    image_widget->setPixmap(image);
+    
+    if (image_widget) {
+        MapCell cell = model->getCellAt(x, y);
+        if (x == 0 && y == 0) {
+            cell = PLAYER;
+        }
+        
+        QPixmap image = getImage(cell);
+        image_widget->setPixmap(image);
+    }
 }
 
 void MapView::updateAllCells()
@@ -99,10 +106,12 @@ QLabel * MapView::getImageWidgetAt(int x, int y)
     
     // FIXME: Don't throw strings.
     if (absolute_x < 0 || absolute_x >= (int) width) {
-        throw "x index out of bounds";
+        // throw "x index out of bounds";
+        return NULL;
     }
     if (absolute_y < 0 || absolute_y >= (int) height) {
-        throw "y index out of bounds";
+        // throw "y index out of bounds";
+        return NULL;
     }
     
     QLayoutItem *layout_item = layout->itemAtPosition(absolute_y, absolute_x);

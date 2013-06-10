@@ -23,13 +23,16 @@ class MapModel {
         void movePlayer(int delta_x, int delta_y);
     
     private:
+        int convertCoordinates(int x, int y) const;
+    
+    private:
         // FIXME: Magic numbers
         // FIXME: A static array is a terrible way of implementing this.
         MapCell cells[25*25];
         int reference_x;
         int reference_y;
         
-        int convertCoordinates(int x, int y) const;
+        MapCell outside_cell;
 };
 
 #endif // _MAP_MODEL_HPP_INCLUDED
