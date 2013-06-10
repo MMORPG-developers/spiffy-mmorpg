@@ -80,6 +80,8 @@ void MapView::updateCellAt(int x, int y)
     
     if (image_widget) {
         MapCell cell = model->getCellAt(x, y);
+        
+        // FIXME: This is the server's job, not ours.
         if (x == 0 && y == 0) {
             cell = PLAYER;
         }
@@ -104,21 +106,16 @@ QLabel * MapView::getImageWidgetAt(int x, int y)
     int absolute_x = player_x + x;
     int absolute_y = player_y + y;
     
-    // FIXME: Don't throw strings.
     if (absolute_x < 0 || absolute_x >= (int) width) {
-        // throw "x index out of bounds";
         return NULL;
     }
     if (absolute_y < 0 || absolute_y >= (int) height) {
-        // throw "y index out of bounds";
         return NULL;
     }
     
     QLayoutItem *layout_item = layout->itemAtPosition(absolute_y, absolute_x);
     QWidget *widget = layout_item->widget();
     return (QLabel *) widget;
-    
-    // return &(image_widgets[absolute_y * width + absolute_x]);
 }
 
 

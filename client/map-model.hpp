@@ -23,6 +23,10 @@ class MapModel {
         void movePlayer(int delta_x, int delta_y);
     
     private:
+        /*
+         * Returns the index of cell (x, y) in the array cells.
+         * If the coordinates are out of bounds, return -1.
+         */
         int convertCoordinates(int x, int y) const;
     
     private:
@@ -32,6 +36,10 @@ class MapModel {
         int reference_x;
         int reference_y;
         
+        /*
+         * Dummy cell. We return a reference to this if someone asks for a
+         * reference to a cell out of bounds.
+         */
         MapCell outside_cell;
 };
 
