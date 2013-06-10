@@ -1,7 +1,12 @@
 #!/bin/bash
 
 make clean
-rm -f client
 rm -f Makefile
 rm -f client.pro
 
+unamestr=`uname`
+if [[ "$unamestr" == 'Darwin' ]];  then
+	rm -rf client.app
+elif [[ "$unamestr" == 'Linux' ]]; then
+	rm -f client
+fi

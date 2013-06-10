@@ -26,18 +26,18 @@ Counter::Counter(QWidget *parent)
 	// Create the layout
 	setLayout(layout);
 
+	// Set up the connections between different pieces of the app. These
+	// connections tell the app to call certain functions when certain events
+	// occur. Look up doc on signals and slots if this is confusing.
+	QObject::connect(count, SIGNAL(clicked()), this, SLOT(showCount()));
+	QObject::connect(quit, SIGNAL(clicked()), this, SLOT(quitClicked()));
+
 	// Show the initial count before we show the app window. If this happens
 	// after we call show(), then there is no value displayed initially.
 	showCount();
 
 	// Show the app window.
 	show();
-
-	// Set up the connections between different pieces of the app. These
-	// connections tell the app to call certain functions when certain events
-	// occur. Look up doc on signals and slots if this is confusing.
-	QObject::connect(count, SIGNAL(clicked()), this, SLOT(showCount()));
-	QObject::connect(quit, SIGNAL(clicked()), this, SLOT(quitClicked()));
 }
 
 Counter::~Counter()

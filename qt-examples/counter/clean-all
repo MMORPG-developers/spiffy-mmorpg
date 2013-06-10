@@ -8,5 +8,5 @@ unamestr=`uname`
 if [[ "$unamestr" == 'Darwin' ]];  then
 	rm -rf counter.app
 elif [[ "$unamestr" == 'Linux' ]]; then
-	rm counter
+	rm -f counter
 fi
