@@ -152,10 +152,19 @@ manage_information_helper(MapManager, TagDict) ->
             NewColumn = OldColumn + DeltaColumns,
             NewPosition = {NewRow, NewColumn},
             
-            % FIXME: Check if the Actor can walk through the destination cell
-            % or not.
+            % Check if the Actor can walk into the destination cell or not.
+            DestinationCell = get_map_cell(MapManager, NewPosition),
+            case DestinationCell#map_cell.blocks_passage of
+                false ->
+                    % The actor can move into that square.
+                    MapManager ! {self(), move_actor, {ActorInfo,
+                                  NewPosition}}
+            ;
+                true ->
+                    % Just don't move the actor.
+                    ok
+            end,
             
-            MapManager ! {self(), move_actor, {ActorInfo, NewPosition}},
             manage_information_helper(MapManager, TagDict)
     end.
 
