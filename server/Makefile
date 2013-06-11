@@ -1,4 +1,4 @@
-all: existentialist_server.beam
+all: main.beam
 
 clean:
 	rm *.beam
@@ -8,5 +8,30 @@ clean:
 %.beam: %.erl
 	erlc $<
 
-existentialist_server.beam: array_2d.beam client_connection.beam
+
+
+# Currently this list is sorted such that the dependencies for each file all
+# occur below it. As long as we avoid circular dependencies (and this is
+# therefore possible), let's keep things this way.
+
+# FIXME: I'm not positive these are all the dependencies. I'm not even sure I
+# know how to generate the correct set of dependencies. Once we figure that
+# out, we might want to write a program to generate the dependency list.
+
+main.beam: info_manager.beam player_control.beam \
+	map.beam user_info_manager.beam tag.beam
+
+info_manager.beam: map.beam user_info_manager.beam
+
+player_control.beam: client_connection.beam
+
+map.beam: user_info_manager.beam array_2d.beam
+
+# user_info_manager.beam:
+
+# tag.beam:
+
+# array_2d.beam:
+
+# client_connection.beam:
 
