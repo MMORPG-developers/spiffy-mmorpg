@@ -11,7 +11,7 @@
 -define(FLOOR_CODE, <<"0">>).
 -define(WALL_CODE, <<"1">>).
 
--include("map-cell.hrl").
+-include("map_cell.hrl").
 
 
 control_user(Socket, Tag, InfoManager) ->

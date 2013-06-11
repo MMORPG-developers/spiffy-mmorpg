@@ -7,7 +7,7 @@
     manage_information/1
 ]).
 
--include("map-cell.hrl").
+-include("map_cell.hrl").
 
 
 

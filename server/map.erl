@@ -8,7 +8,7 @@
     manage_map/1
 ]).
 
--include("map-cell.hrl").
+-include("map_cell.hrl").
 
 
 get_map_cell(MapManager, Position) ->

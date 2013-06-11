@@ -6,7 +6,7 @@
 
 -define(PORT, 6667).
 
--include("map-cell.hrl").
+-include("map_cell.hrl").
 -include("user_info.hrl").
 
 

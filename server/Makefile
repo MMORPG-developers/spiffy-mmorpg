@@ -19,15 +19,15 @@ clean:
 # out, we might want to write a program to generate the dependency list.
 
 main.beam: info_manager.beam player_control.beam \
-	map.beam user_info_manager.beam tag.beam
+	map.beam user_info_manager.beam tag.beam map_cell.hrl user_info.hrl
 
-info_manager.beam: map.beam user_info_manager.beam
+info_manager.beam: map.beam user_info_manager.beam map_cell.hrl
 
-player_control.beam: client_connection.beam
+player_control.beam: client_connection.beam map_cell.hrl
 
-map.beam: user_info_manager.beam array_2d.beam
+map.beam: user_info_manager.beam array_2d.beam map_cell.hrl
 
-# user_info_manager.beam:
+user_info_manager.beam: user_info.hrl
 
 # tag.beam:
 
