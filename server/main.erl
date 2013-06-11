@@ -1,24 +1,18 @@
--module(existentialist_server).
+-module(main).
 
 -export([
-% Functions actually used by outside code
-    main/0
-% Functions that we spawn
-    % ...
+    run/0
 ]).
 
 -define(PORT, 6667).
-
 
 -include("map-cell.hrl").
 -include("user_info.hrl").
 
 
 
+run() -> wait_for_connections().
 
-
-
-main() -> wait_for_connections().
 
 
 wait_for_connections() ->
@@ -42,7 +36,6 @@ wait_for_connections_helper(ListeningSocket, TagManager, MapManager,
     % Continue waiting for connections
     wait_for_connections_helper(ListeningSocket, TagManager, MapManager,
                                 InfoManager).
-
 
 
 
