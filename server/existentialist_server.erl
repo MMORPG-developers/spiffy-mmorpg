@@ -1,16 +1,12 @@
 -module(existentialist_server).
 
-% We need to export handle_connection so that spawn can find it.
 -export([
 % Functions actually used by outside code
     main/0,
 % Functions that we spawn
-    manage_tags/0,
-    manage_map/1,
     manage_information/1,
     initialize_user/4,
-    control_user/3,
-    manage_user_info/2
+    control_user/3
 ]).
 
 -define(PORT, 6667).
@@ -18,22 +14,9 @@
 -define(FLOOR_CODE, <<"0">>).
 -define(WALL_CODE, <<"1">>).
 
+-include("map-cell.hrl").
+-include("user_info.hrl").
 
--record(user_info, {
-    tag,
-    username = "",
-    % FIXME: Are we actually overlapping maps?
-    maps = [],
-    position
-}).
-
--record(map_cell, {
-    blocks_passage = false,
-    actors = []
-}).
-
-% TODO: Have a record for the information that a particular actor knows about
-% a map cell.
 
 
 
@@ -43,8 +26,8 @@ main() -> wait_for_connections().
 
 
 wait_for_connections() ->
-    TagManager = spawn(?MODULE, manage_tags, []),
-    MapManager = spawn(?MODULE, manage_map, [{12, 16}]),
+    TagManager = spawn(tag, manage_tags, []),
+    MapManager = spawn(map, manage_map, [{12, 16}]),
     InfoManager = spawn(?MODULE, manage_information, [MapManager]),
     
     {ok, ListeningSocket} =
@@ -73,49 +56,11 @@ wait_for_connections_helper(ListeningSocket, TagManager, MapManager,
 
 
 
-% Having a single tag-managing thread will probably be too much of a bottleneck
-% for a distributed server. However, once we reach such a large scale, we
-% should be able to divide up tags by map or some such. As long as each tag
-% has a prefix that is unique to its map (or server, or whatever), then
-% distributed servers can generate unique tags without needing a centralized
-% tag manager.
-% 
-% As an additional note: running out of tags that the client can handle is
-% really not a concern; we should run out of PIDs long before then.
-
-manage_tags() ->
-    % Don't generate tags too small just in case it makes a difference.
-    manage_tags_helper(10).
-
-manage_tags_helper(Previous) ->
-    receive
-        {Sender, request_tag, {}} ->
-            NewTag = Previous + 1,
-            Sender ! {ok, {request_tag, {}}, NewTag},
-            manage_tags_helper(NewTag)
-    ;
-        {_Sender, free_tag, {_Tag}} ->
-            % The OS/161 solution: free is a no-op.
-            % FIXME: Don't allow this in production code.
-            manage_tags_helper(Previous)
-    end.
-
-get_new_tag(TagManager) ->
-    TagManager ! {self(), request_tag, {}},
-    receive
-        {ok, {request_tag, {}}, Tag} ->
-            Tag
-    end.
-
-free_tag(TagManager, Tag) ->
-    TagManager ! {self(), free_tag, {Tag}}.
 
 
 
 
-
-
-
+% -include("map-cell.hrl")
 
 manage_information(MapManager) ->
     manage_information_helper(MapManager, dict:new()).
@@ -134,7 +79,8 @@ manage_information_helper(MapManager, TagDict) ->
             % FIXME: Apparently dict:fetch returns a list. Do we just pattern
             % match like this every time we do a dict:fetch?
             [ObserverInfo] = dict:fetch(ObserverTag, TagDict),
-            ObserverPosition = get_actor_position(ObserverInfo),
+            ObserverPosition = user_info_manager:get_actor_position(
+                ObserverInfo),
             VisibleCells = get_all_visible_map_cells(MapManager,
                                                      ObserverPosition),
             % TODO: More complicated calculations. Maybe the observer is blind,
@@ -147,13 +93,14 @@ manage_information_helper(MapManager, TagDict) ->
             [ActorInfo] = dict:fetch(Tag, TagDict),
             {DeltaRows, DeltaColumns} = get_movement_delta(Direction),
             
-            {OldRow, OldColumn} = get_actor_position(ActorInfo),
+            {OldRow, OldColumn} = user_info_manager:get_actor_position(
+                ActorInfo),
             NewRow = OldRow + DeltaRows,
             NewColumn = OldColumn + DeltaColumns,
             NewPosition = {NewRow, NewColumn},
             
             % Check if the Actor can walk into the destination cell or not.
-            DestinationCell = get_map_cell(MapManager, NewPosition),
+            DestinationCell = map:get_map_cell(MapManager, NewPosition),
             case DestinationCell#map_cell.blocks_passage of
                 false ->
                     % The actor can move into that square.
@@ -173,7 +120,7 @@ manage_information_helper(MapManager, TagDict) ->
 % Map is the PID of the map process.
 % ObserverPosition is of the form {Row, Column}.
 get_all_visible_map_cells(MapManager, _ObserverPosition) ->
-    {NumberOfRows, NumberOfColumns} = get_map_size(MapManager),
+    {NumberOfRows, NumberOfColumns} = map:get_map_size(MapManager),
     AllRows = lists:seq(0, NumberOfRows - 1),
     AllColumns = lists:seq(0, NumberOfColumns - 1),
     [{Row, Column} || Row <- AllRows, Column <- AllColumns].
@@ -193,7 +140,7 @@ send_map_cell_info_to(Recipient, CellPosition, MapManager, Origin) ->
     RelativePosition = {RelativeRow, RelativeColumn},
     
     % MapCell = array_2d:get(CellPosition, Map),
-    MapCell = get_map_cell(MapManager, CellPosition),
+    MapCell = map:get_map_cell(MapManager, CellPosition),
     Recipient ! {self(), update_map_cell, {RelativePosition, MapCell}}.
 
 
@@ -201,83 +148,6 @@ send_map_cell_info_to(Recipient, CellPosition, MapManager, Origin) ->
 
 
 
-
-
-manage_map(Size) ->
-    Map = create_map(Size),
-    manage_map_helper(Map).
-
-manage_map_helper(Map) ->
-    receive
-        {Sender, request_size, {}} ->
-            Size = array_2d:size(Map),
-            Sender ! {ok, {request_size, {}}, Size},
-            manage_map_helper(Map)
-    ;
-        {Sender, request_cell, {Position}} ->
-            Cell = array_2d:get(Position, Map),
-            Sender ! {ok, {request_cell, {Position}}, Cell},
-            manage_map_helper(Map)
-    ;
-        {_Sender, new_actor, {Position, ActorInfo}} ->
-            % FIXME: Make argument order more consistent.
-            NewMap = add_actor_to_map(Map, ActorInfo, Position),
-            manage_map_helper(NewMap)
-    ;
-        {_Sender, move_actor, {ActorInfo, NewPosition}} ->
-            OldPosition = get_actor_position(ActorInfo),
-            
-            MapWithoutActor = remove_actor_from_map(Map, ActorInfo,
-                                                    OldPosition),
-            MapWithActorMoved = add_actor_to_map(MapWithoutActor, ActorInfo,
-                                                 NewPosition),
-            
-            % Tell the actor it moved.
-            % FIXME: Should we tell the ActorInfo or the ActorController?
-            ActorInfo ! {self(), move_in_map, NewPosition},
-            
-            manage_map_helper(MapWithActorMoved)
-    end.
-
-create_map(Size = {Rows, Columns}) ->
-    UninitializedMap = array_2d:new(Size),
-    FillFunction = fun
-        ({R, _}, _) when (R == 0) or (R == Rows-1) ->
-            #map_cell{blocks_passage=true}
-    ;
-        ({_, C}, _) when (C == 0) or (C == Columns-1) ->
-            #map_cell{blocks_passage=true}
-    ;
-        ({_, _}, _) ->
-            #map_cell{blocks_passage=false}
-    end,
-    array_2d:map(FillFunction, UninitializedMap).
-
-remove_actor_from_map(Map, ActorInfo, Position) ->
-    OldCell = array_2d:get(Position, Map),
-    RemainingActors = OldCell#map_cell.actors -- [ActorInfo],
-    NewCell = OldCell#map_cell{actors=RemainingActors},
-    array_2d:set(Position, NewCell, Map).
-
-add_actor_to_map(Map, ActorInfo, Position) ->
-    OldCell = array_2d:get(Position, Map),
-    ActorsInNewCell = [ActorInfo | OldCell#map_cell.actors],
-    NewCell = OldCell#map_cell{actors=ActorsInNewCell},
-    array_2d:set(Position, NewCell, Map).
-
-get_map_cell(MapManager, Position) ->
-    MapManager ! {self(), request_cell, {Position}},
-    receive
-        {ok, {request_cell, {Position}}, Cell} ->
-            Cell
-    end.
-
-get_map_size(MapManager) ->
-    MapManager ! {self(), request_size, {}},
-    receive
-        {ok, {request_size, {}}, Size} ->
-            Size
-    end.
 
 
 
@@ -307,9 +177,10 @@ get_movement_delta(northwest) ->
 
 
 
+% -include("user_info.hrl").
 
 initialize_user(Socket, TagManager, MapManager, InfoManager) ->
-    Tag = get_new_tag(TagManager),
+    Tag = tag:get_new_tag(TagManager),
     
     % FIXME: We seriously need a better way of placing users. But that might
     % have to wait until we have enough maps to actually designate a newbie
@@ -318,8 +189,8 @@ initialize_user(Socket, TagManager, MapManager, InfoManager) ->
     UserInfo = #user_info{tag=Tag, maps=[MapManager], position=Position},
     
     UserController = spawn(?MODULE, control_user, [Socket, Tag, InfoManager]),
-    UserInfoManager = spawn(?MODULE, manage_user_info, [UserInfo,
-                                                        UserController]),
+    UserInfoManager = spawn(user_info_manager, manage_user_info,
+                            [UserInfo, UserController]),
     
     InfoManager ! {self(), new_actor, {UserInfoManager, Tag}},
     MapManager ! {self(), new_actor, {Position, UserInfoManager}},
@@ -338,55 +209,10 @@ initialize_user(Socket, TagManager, MapManager, InfoManager) ->
 
 
 
-manage_user_info(UserInfo, UserController) ->
-    receive
-        {Sender, request_controller, {}} ->
-            Sender ! {ok, {request_controller, {}}, UserController},
-            manage_user_info(UserInfo, UserController)
-    ;
-        {Sender, request_coordinates, {}} ->
-            Position = UserInfo#user_info.position,
-            Sender ! {ok, {request_coordinates, {}}, Position},
-            manage_user_info(UserInfo, UserController)
-    ;
-        {_Sender, move_in_map, {NewRow, NewColumn}} ->
-            % Calculate the change.
-            {OldRow, OldColumn} = UserInfo#user_info.position,
-            DeltaRows = NewRow - OldRow,
-            DeltaColumns = NewColumn - OldColumn,
-            DeltaPosition = {DeltaRows, DeltaColumns},
-            
-            % Update our position.
-            NewUserInfo = UserInfo#user_info{position={NewRow, NewColumn}},
-            
-            % Pass this on to the UserController.
-            % FIXME: Should this in general be the responsibility of the
-            % ActorInfo? I'm not convinced that having the controller be
-            % notified based on modifications to the underlying data is a good
-            % precedent to set.
-            UserController ! {no_reply, move_in_map, DeltaPosition},
-            
-            manage_user_info(NewUserInfo, UserController)
-    end.
-
-get_actor_position(UserInfoManager) ->
-    UserInfoManager ! {self(), request_coordinates, {}},
-    receive
-        {ok, {request_coordinates, {}}, Coordinates} ->
-            Coordinates
-    end.
-
-get_actor_controller(UserInfoManager) ->
-    UserInfoManager ! {self(), request_controller, {}},
-    receive
-        {ok, {request_controller, {}}, Controller} ->
-            Controller
-    end.
-    
 
 
 
-
+% -include("map-cell.hrl")
 
 % We don't currently need the helper version of this function, but I predict
 % we'll need it later.
