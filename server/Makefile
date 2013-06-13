@@ -18,6 +18,11 @@ clean:
 # know how to generate the correct set of dependencies. Once we figure that
 # out, we might want to write a program to generate the dependency list.
 
+# FIXME: Actually, an alternative solution is to just get a list of all .erl
+# files and erlc any that need to be erlc'd. I mean, it'd be easy and I'm
+# pretty sure it's actually what we want. The only real disadvantage is that
+# it will also compile unused files.
+
 main.beam: info_manager.beam player_control.beam \
 	map.beam user_info_manager.beam tag.beam map_cell.hrl user_info.hrl
 
