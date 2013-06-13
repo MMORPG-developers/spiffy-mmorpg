@@ -94,10 +94,11 @@ encode_header_helper(Size, BytesLeft) when BytesLeft > 0 ->
 % reads, so it may not be worth it.
 % 
 % FIXME: According to the documentation for gen_tcp:recv/2 and gen_tcp:recv/3,
-% they return exactly Length bytes, not at most Length bytes. If this is so,
+% they return *exactly* Length bytes, not at most Length bytes. If this is so,
 % then this function is redundant and it should just call gen_tcp:recv. But I'm
 % afraid to test it, because it's the sort of thing that even if it works now,
-% might just stop working arbitrarily at some later point.
+% might just stop working arbitrarily at some later point. We'd have to test it
+% in a situation where there aren't actually that many bytes to read.
 % 
 % As a note, the gen_tcp:recv documentation is unclear about what happens if
 % the timeout is hit. Empirically, it returns {error, timeout} in that case.
