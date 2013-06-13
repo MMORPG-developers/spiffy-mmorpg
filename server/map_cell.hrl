@@ -12,4 +12,6 @@
 
 % TODO: Have a record for the information that a particular actor knows about
 % a map cell?
+% I'm not sure we'll want this. I think map_cell records will probably be able
+% to store incomplete information about cells.
 
