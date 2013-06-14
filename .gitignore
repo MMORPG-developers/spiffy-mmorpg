@@ -1,8 +1,11 @@
 .eunit
 deps
 *.o
-*.beam
 *.plt
+
+# Server files that should be ignored
+*.beam
+server/.dependencies
 
 # Qt files that should be ignored.
 *.pro
