@@ -64,6 +64,13 @@ manage_information_helper(MapManager, TagDict) ->
             VisibleCells = get_all_visible_map_cells(MapManager,
                                                      ObserverPosition),
             
+            % --- This one ---
+            % FIXME: What's to stop the recipient from moving after we
+            % calculate their position but before we finish sending them the
+            % map data? If that happens, then we would refer to the remaining
+            % cells using incorrect relative positions. This looks like a nasty
+            % race condition....
+            
             % Send them the information.
             send_all_map_cells_info_to(Sender, VisibleCells, MapManager,
                                        ObserverPosition),
