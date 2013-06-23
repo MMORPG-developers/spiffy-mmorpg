@@ -1,5 +1,6 @@
 #include "server-connection.hpp"
 
+#include <iostream>
 #include <string>
 
 /*
@@ -114,6 +115,8 @@ void ServerConnection::sendText(QString text)
         return;
     }
     
+    std::cerr << "[sent] " << text.toStdString() << std::endl;
+    
     char header_buff[HEADER_SIZE];
     
     // Encode the size in HEADER_SIZE bytes by putting the bytes into the
@@ -161,6 +164,8 @@ void ServerConnection::socketReadyToRead()
         // Read the packet and signal its arrival.
         QByteArray data = readWithExactSize(packet_size);
         QString s(data);
+        
+        std::cerr << "[received] " << s.toStdString() << std::endl;
         
         emit textArrived(s);
     }
