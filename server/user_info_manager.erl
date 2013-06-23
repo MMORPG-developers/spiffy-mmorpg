@@ -3,6 +3,7 @@
 -export([
 % For calling
     get_actor_position/1,
+    get_actor_origin/1,
     get_actor_controller/1,
 % For spawning
     manage_user_info/2
@@ -23,6 +24,20 @@ get_actor_position(UserInfoManager) ->
         % ...and return its response.
         {ok, {request_coordinates, {}}, Coordinates} ->
             Coordinates
+    end.
+
+% get_actor_origin(UserInfoManager)
+% Returns the "origin coordinates" of the given actor. Any coordinates
+% communicated to this actor should be given relative to the origin
+% coordinates.
+% UserInfoManager is the PID of the process storing the actor's information.
+get_actor_origin(UserInfoManager) ->
+    % Request the coordinates.
+    UserInfoManager ! {self(), request_origin, {}},
+    receive
+        % Wait for the response; return it.
+        {ok, {request_origin, {}}, Origin} ->
+            Origin
     end.
 
 % get_actor_controller(UserInfoManager)
@@ -58,6 +73,13 @@ manage_user_info(UserInfo, UserController) ->
             % Get it from the user_info record and send it back to them.
             Position = UserInfo#user_info.position,
             Sender ! {ok, {request_coordinates, {}}, Position},
+            manage_user_info(UserInfo, UserController)
+    ;
+        % Someone's requested this user's origin coordinates.
+        {Sender, request_origin, {}} ->
+            % Get it from the user_info record and send it back to them.
+            Origin = UserInfo#user_info.origin,
+            Sender ! {ok, {request_origin, {}}, Origin},
             manage_user_info(UserInfo, UserController)
     ;
         % Someone's told us to move to a new location.

@@ -82,7 +82,8 @@ create_user(Socket, TagManager, MapManager, InfoManager) ->
     % FIXME: Actually have the user log in and assign them a preexisting
     % character, rather than simply creating a fresh one for every login.
     Position = {1, 1},
-    UserInfo = #user_info{tag=Tag, maps=[MapManager], position=Position},
+    UserInfo = #user_info{tag=Tag, maps=[MapManager], position=Position,
+                          origin=Position},
     
     % Spawn two processes for the user: one to control it and the other to
     % store its information.

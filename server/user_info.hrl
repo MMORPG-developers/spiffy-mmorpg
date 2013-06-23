@@ -17,6 +17,11 @@
     % do something better than this. And if we're not, map (above) shouldn't be
     % a list. We should make up our minds. And probably make map not a list for
     % now.
-    position
+    position,
+    
+    % origin: any time we want to tell the player where something is, we give
+    % them coordinates relative to this point. This point may change as the
+    % player moves from map to map.
+    origin
 }).
 

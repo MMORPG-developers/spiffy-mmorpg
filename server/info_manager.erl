@@ -93,8 +93,10 @@ manage_information_helper(MapManager, TagDict) ->
             % any cell relative to any actor.
             
             % Send them the information.
+            ObserverOrigin = user_info_manager:get_actor_origin(
+                ObserverInfo),
             send_all_map_cells_info_to(Sender, VisibleCells, MapManager,
-                                       ObserverPosition),
+                                       ObserverOrigin),
             manage_information_helper(MapManager, TagDict)
     ;
         % Causes the specified actor to try to walk in the specified direction.
