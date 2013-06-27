@@ -1,3 +1,7 @@
+/*
+ * See comment in snet-client.hpp.
+ */
+
 #include "snet-client.hpp"
 
 SNetClient::SNetClient(QWidget *parent, Qt::WindowFlags flags)
