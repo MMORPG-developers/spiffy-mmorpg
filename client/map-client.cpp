@@ -1,8 +1,9 @@
 #include "map-client.hpp"
 
-#include <QRegExp>
+#include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QRegExp>
 
 #include "map-cell.hpp"
 
@@ -16,6 +17,12 @@ MapClient::MapClient(unsigned int width, unsigned int height)
     // The MapView is the only thing displayed by the client.
     layout->addWidget(view);
     setLayout(layout);
+    
+    // Make the view update whenever appropriate changes happen in the model.
+    QObject::connect(model, SIGNAL(cellUpdated(int, int)),
+                     view, SLOT(updateCell(int, int)));
+    QObject::connect(model, SIGNAL(playerMoved(int, int)),
+                     view, SLOT(movePlayer(int, int)));
 }
 
 MapClient::~MapClient()
@@ -47,7 +54,7 @@ void MapClient::handleServerPacket(QString packet)
         
         // Update the model and view.
         model->setCellAt(x, y, cell);
-        view->updateRelativeCell(x, y);
+        // view->updateRelativeCell(x, y);
     }
     else if (words[0] == "move_in_map") {
         // The player has moved.
@@ -58,7 +65,7 @@ void MapClient::handleServerPacket(QString packet)
         
         // Update the model and view.
         model->movePlayer(delta_x, delta_y);
-        view->movePlayer(delta_x, delta_y);
+        // view->movePlayer(delta_x, delta_y);
     }
     else {
         // If we don't recognize the first word, it's an error.

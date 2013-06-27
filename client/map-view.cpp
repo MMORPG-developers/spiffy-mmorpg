@@ -40,8 +40,8 @@ MapView::MapView(unsigned int width, unsigned int height,
     this->height = height;
     
     // The player goes in the center.
-    this->player_x = this->width/2;
-    this->player_y = this->height/2;
+    this->player_screen_x = this->width/2;
+    this->player_screen_y = this->height/2;
     
     this->model = model;
     
@@ -69,30 +69,18 @@ MapView::~MapView()
     // need to delete layout.
 }
 
-void MapView::movePlayer(int delta_x, int delta_y)
+void MapView::updateCell(int x, int y)
 {
-    // Suppress compiler warnings.
-    (void) delta_x;
-    (void) delta_y;
-    
-    // Eventually, we should move cells over and only go to the model for
-    // information on the ones that were just brought into the display region.
-    // But for now, just redraw them all.
-    updateAllCells();
-}
-
-void MapView::updateRelativeCell(int relative_x, int relative_y)
-{
-    QLabel *image_widget = getImageWidgetAt(relative_x, relative_y);
+    QLabel *image_widget = getImageWidgetAt(x, y);
     
     // If the given coordinates are out of bounds, then do nothing.
     if (image_widget) {
         // Get the cell from the model.
-        MapCell cell = model->getCellAt(relative_x, relative_y);
+        MapCell cell = model->getCellAt(x, y);
         
         // Special case: Always draw the player at the player's location.
         // FIXME: This is the server's job, not ours.
-        if (relative_x == 0 && relative_y == 0) {
+        if (x == player_world_x && y == player_world_y) {
             cell = PLAYER;
         }
         
@@ -102,42 +90,71 @@ void MapView::updateRelativeCell(int relative_x, int relative_y)
     }
 }
 
-void MapView::updateAbsoluteCell(int absolute_x, int absolute_y)
-{
-    // Adjust coordinates, thus reducing the problem to one already solved.
-    updateRelativeCell(absolute_x - player_x, absolute_y - player_y);
-}
-
 void MapView::updateAllCells()
 {
     // For each cell: update it.
-    for (unsigned int x = 0; x < width; ++x) {
-        for (unsigned int y = 0; y < height; ++y) {
-            updateAbsoluteCell(x, y);
+    for (unsigned int screen_x = 0; screen_x < width; ++screen_x) {
+        for (unsigned int screen_y = 0; screen_y < height; ++screen_y) {
+            // Convert the coordinates (the model needs world coordinates).
+            int world_x = screenToWorldX(screen_x);
+            int world_y = screenToWorldY(screen_y);
+            
+            updateCell(world_x, world_y);
         }
     }
 }
 
+void MapView::movePlayer(int delta_x, int delta_y)
+{
+    // Update the player's position.
+    player_world_x += delta_x;
+    player_world_y += delta_y;
+    
+    // Eventually, we should move cells over and only go to the model for
+    // information on the ones that were just brought into the display region.
+    // But for now, just redraw them all.
+    updateAllCells();
+}
+
 QLabel * MapView::getImageWidgetAt(int x, int y)
 {
-    // The given coordinates are relative to the player.
-    // Adjust them to be relative to our array.
-    int absolute_x = player_x + x;
-    int absolute_y = player_y + y;
+    // Convert the given world coordinates to screen coordinates.
+    int screen_x = worldToScreenX(x);
+    int screen_y = worldToScreenY(y);
     
     // Check that they're in bounds. If not, return NULL.
-    if (absolute_x < 0 || absolute_x >= (int) width) {
+    if (screen_x < 0 || (unsigned) screen_x >= width) {
         return NULL;
     }
-    if (absolute_y < 0 || absolute_y >= (int) height) {
+    if (screen_y < 0 || (unsigned) screen_y >= height) {
         return NULL;
     }
     
     // Ask the grid layout for the widget at those coordinates.
     // Recast it to the type it's supposed to be.
-    QLayoutItem *layout_item = layout->itemAtPosition(absolute_y, absolute_x);
+    QLayoutItem *layout_item = layout->itemAtPosition(screen_y, screen_x);
     QWidget *widget = layout_item->widget();
     return static_cast<QLabel *>(widget);
 }
 
+
+int MapView::worldToScreenX(int world_x) const
+{
+    return world_x + (player_screen_x - player_world_x);
+}
+
+int MapView::worldToScreenY(int world_y) const
+{
+    return world_y + (player_screen_y - player_world_y);
+}
+
+int MapView::screenToWorldX(int screen_x) const
+{
+    return screen_x + (player_world_x - player_screen_x);
+}
+
+int MapView::screenToWorldY(int screen_y) const
+{
+    return screen_y + (player_world_y - player_screen_y);
+}
 

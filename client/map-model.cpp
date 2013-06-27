@@ -2,12 +2,16 @@
 
 MapModel::MapModel()
 {
+    // The player always starts at (0, 0).
+    player_x = 0;
+    player_y = 0;
+    
     // Look, this is a terrible solution. But we need to stop using a static
     // array anyway, so whatever. Until then, we'll choose these magic values
     // because they happen to work with the current server room size.
     // FIXME: Magic numbers
-    reference_x = 5;
-    reference_y = 5;
+    origin_x = 5;
+    origin_y = 5;
     
     outside_cell = UNKNOWN;
     
@@ -46,6 +50,9 @@ void MapModel::setCellAt(int x, int y, const MapCell & new_cell)
     // If not, then for now just crash because we're using a static array.
     if (index >= 0) {
         cells[index] = new_cell;
+        
+        // Inform anyone interested that the cell was updated.
+        emit cellUpdated(x, y);
     }
     else {
         // FIXME: Don't throw strings.
@@ -55,28 +62,29 @@ void MapModel::setCellAt(int x, int y, const MapCell & new_cell)
 
 void MapModel::movePlayer(int delta_x, int delta_y)
 {
-    // Since we take reference_x and reference_y into account when we do cell
-    // lookups, all we need to do to move the player is change those values.
-    reference_x += delta_x;
-    reference_y += delta_y;
+    // Change the player's location.
+    player_x += delta_x;
+    player_y += delta_y;
+    
+    // Inform anyone interested that the player moved.
+    emit playerMoved(delta_x, delta_y);
 }
 
 int MapModel::convertCoordinates(int x, int y) const
 {
-    // The given coordinates are relative to the player.
-    // Adjust them to be relative to our array.
-    int absolute_x = reference_x + x;
-    int absolute_y = reference_y + y;
+    // Convert the given world coordinates to be relative to our static array.
+    int array_x = origin_x + x;
+    int array_y = origin_y + y;
     
     // Check that they're in bounds. If not, return -1.
-    if (absolute_x < 0 || absolute_x >= 25) {
+    if (array_x < 0 || array_x >= 25) {
         return -1;
     }
-    if (absolute_y < 0 || absolute_y >= 25) {
+    if (array_y < 0 || array_y >= 25) {
         return -1;
     }
     
     // Turn 2-dimensional coordinates into a 1-dimensional coordinate.
-    return absolute_y * 25 + absolute_x;
+    return array_y * 25 + array_x;
 }
 

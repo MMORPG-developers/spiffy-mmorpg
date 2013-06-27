@@ -3,17 +3,21 @@
 
 #include "map-cell.hpp"
 
+#include <QObject>
+
 /*
  * Class to store all known information about the map.
  */
-class MapModel {
+class MapModel : public QObject {
+    Q_OBJECT
+    
     public:
         MapModel();
         ~MapModel();
         
         /*
-         * For both of the following, coordinates are given relative to the
-         * player's current location.
+         * For both of the following, coordinates are given relative to
+         * wherever the player entered this map.
          * 
          * getCellAt is only guaranteed to return a reference/pointer to a
          * MapCell with the correct data. Subsequent calls to getCellAt at the
@@ -26,11 +30,23 @@ class MapModel {
         void setCellAt(int x, int y, const MapCell &new_cell);
         
         /*
-         * Move the player by the given amount. All future calls to getCellAt
-         * and setCellAt will use coordinates relative to the new player
-         * location.
+         * Move the player by the given amount.
+         * Currently all this does is cause the playerMoved signal to be
+         * emitted.
          */
         void movePlayer(int delta_x, int delta_y);
+    
+    signals:
+        /*
+         * Emitted whenever a cell changes (and therefore might need to be
+         * redrawn).
+         */
+        void cellUpdated(int x, int y);
+        
+        /*
+         * Emitted whenever the player moves.
+         */
+        void playerMoved(int delta_x, int delta_y);
     
     private:
         /*
@@ -49,11 +65,18 @@ class MapModel {
         MapCell cells[25*25];
         
         /*
-         * The player's current location. All coordinates are relative to this
-         * location.
+         * The location of the cell (0, 0) in the static array. Unlike
+         * everything else in the model, these are not world coordinates but
+         * indices into the array.
          */
-        int reference_x;
-        int reference_y;
+        int origin_x;
+        int origin_y;
+        
+        /*
+         * The player's current location (in world coordinates).
+         */
+        int player_x;
+        int player_y;
         
         /*
          * Dummy cell. We return a reference to this if someone asks for a

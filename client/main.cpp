@@ -1,3 +1,18 @@
+/* FIXME
+
+Currently there's a hard-to-reproduce bug where sometimes when you start the
+client, it won't display anything (well, only a giant field of black squares).
+I don't know why this is, but I predict it means Qt is running things in
+multiple threads or some such and occasionally the socket starts emitting the
+signal "data arrived from server" before the main client widget is set up to
+receive that signal.
+If you're trying to replicate the bug, run a server and then just start, exit,
+and restart the client repeatedly. For me I think it takes on the order of 20
+times, but I haven't counted and it seems random anyway.
+ -- Greg Kronmiller, 26 Jun 2013
+
+ */
+
 #include <iostream>
 
 #include "snet-client.hpp"
