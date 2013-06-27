@@ -78,29 +78,29 @@ class MapView : public QFrame {
         /*
          * The size of the map.
          */
-        unsigned int width;
-        unsigned int height;
+        unsigned int width_;
+        unsigned int height_;
         
         /*
          * The player's current location, in both world and screen coordinates.
          * These two coordinate pairs are used for converting between screen
          * and world coordinates.
          */
-        int player_world_x;
-        int player_world_y;
-        int player_screen_x;
-        int player_screen_y;
+        int player_world_x_;
+        int player_world_y_;
+        int player_screen_x_;
+        int player_screen_y_;
         
         /*
          * The model, which is the ultimate authority (outside of the server,
          * anyway) on what we know about which map cells.
          */
-        const MapModel *model;
+        const MapModel *model_;
         
         /*
          * Layout for the image widgets.
          */
-        QGridLayout *layout;
+        QGridLayout *layout_;
 };
 
 #endif // _MAP_VIEW_HPP_INCLUDED
