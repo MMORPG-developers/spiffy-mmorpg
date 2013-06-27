@@ -39,6 +39,9 @@ MapView::MapView(unsigned int width, unsigned int height,
     this->width = width;
     this->height = height;
     
+    this->player_world_x = 0;
+    this->player_world_y = 0;
+    
     // The player goes in the center.
     this->player_screen_x = this->width/2;
     this->player_screen_y = this->height/2;

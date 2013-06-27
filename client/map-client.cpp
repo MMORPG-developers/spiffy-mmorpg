@@ -54,7 +54,6 @@ void MapClient::handleServerPacket(QString packet)
         
         // Update the model and view.
         model->setCellAt(x, y, cell);
-        // view->updateRelativeCell(x, y);
     }
     else if (words[0] == "move_in_map") {
         // The player has moved.
@@ -65,7 +64,6 @@ void MapClient::handleServerPacket(QString packet)
         
         // Update the model and view.
         model->movePlayer(delta_x, delta_y);
-        // view->movePlayer(delta_x, delta_y);
     }
     else {
         // If we don't recognize the first word, it's an error.
