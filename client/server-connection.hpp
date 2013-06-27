@@ -55,7 +55,7 @@ class ServerConnection : public QObject {
         QByteArray readWithExactSize(qint64 size);
     
     private:
-        QTcpSocket *socket;
+        QTcpSocket *socket_;
 };
 
 #endif // _SERVER_CONNECTION_HPP_INCLUDED

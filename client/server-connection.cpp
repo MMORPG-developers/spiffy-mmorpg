@@ -11,19 +11,19 @@ static const int HEADER_SIZE = 2;
 
 ServerConnection::ServerConnection(const QString &server, quint16 port)
 {
-    socket = new QTcpSocket(this);
+    socket_ = new QTcpSocket(this);
     
     // Connect to the server immediately.
-    socket->connectToHost(server, port);
+    socket_->connectToHost(server, port);
     
     // Start listening for packets from the server.
-    QObject::connect(socket, SIGNAL(readyRead()),
+    QObject::connect(socket_, SIGNAL(readyRead()),
                      this, SLOT(socketReadyToRead()));
 }
 
 ServerConnection::~ServerConnection()
 {
-    // Calling socket->disconnectFromHost() will try to write all remaining
+    // Calling socket_->disconnectFromHost() will try to write all remaining
     // data to the socket before closing it. Calling abort() will immediately
     // close it. I don't think disconnectFromHost() blocks until the socket is
     // disconnected, so if we used it we'd have to manually wait until the
@@ -31,14 +31,14 @@ ServerConnection::~ServerConnection()
     // I'm not sure which one is the better idea, but calling
     // disconnectFromHost() in a destructor seems a little unwise (it could
     // potentially take a while).
-    socket->abort();
-    // socket->disconnectFromHost();
+    socket_->abort();
+    // socket_->disconnectFromHost();
     
     // I think Qt already cleans up children on destruction, so we shouldn't
-    // need to delete socket.
+    // need to delete socket_.
     // But on the offchance we do, and if we use disconnectFromHost() above,
     // we should make sure to wait until the socket is finished disconnecting
-    // before deleting socket.
+    // before deleting socket_.
 }
 
 void ServerConnection::writeAll(const QByteArray &data)
@@ -49,12 +49,12 @@ void ServerConnection::writeAll(const QByteArray &data)
     
     while (len > 0) {
         // Try to write some more.
-        int bytes_written = socket->write(bytes, len);
+        int bytes_written = socket_->write(bytes, len);
         
         // If we fail, stop and signal an error.
         if (bytes_written < 0) {
             QString error_message("Write failed: ");
-            error_message.append(socket->errorString());
+            error_message.append(socket_->errorString());
             emit error(error_message);
             return;
         }
@@ -71,7 +71,7 @@ QByteArray ServerConnection::readWithExactSize(qint64 size)
     
     while (data.size() < size) {
         // Get more data, up to the amount we want to read.
-        QByteArray next_data = socket->read(size - data.size());
+        QByteArray next_data = socket_->read(size - data.size());
         data.append(next_data);
     }
     
@@ -139,7 +139,7 @@ void ServerConnection::socketReadyToRead()
     while (true) {
         // If there isn't even a header's worth of bytes to read, stop right
         // now.
-        QByteArray header = socket->peek(HEADER_SIZE);
+        QByteArray header = socket_->peek(HEADER_SIZE);
         if (header.size() != HEADER_SIZE) {
             return;
         }
@@ -154,7 +154,7 @@ void ServerConnection::socketReadyToRead()
         }
         
         // Only continue if the entire packet is available.
-        if ((unsigned) socket->bytesAvailable() < packet_size + HEADER_SIZE) {
+        if ((unsigned) socket_->bytesAvailable() < packet_size + HEADER_SIZE) {
             return;
         }
         
