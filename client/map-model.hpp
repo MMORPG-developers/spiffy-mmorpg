@@ -69,20 +69,20 @@ class MapModel : public QObject {
          * everything else in the model, these are not world coordinates but
          * indices into the array.
          */
-        int origin_x;
-        int origin_y;
+        int origin_x_;
+        int origin_y_;
         
         /*
          * The player's current location (in world coordinates).
          */
-        int player_x;
-        int player_y;
+        int player_x_;
+        int player_y_;
         
         /*
          * Dummy cell. We return a reference to this if someone asks for a
          * reference to a cell out of bounds.
          */
-        MapCell outside_cell;
+        MapCell outside_cell_;
 };
 
 #endif // _MAP_MODEL_HPP_INCLUDED
