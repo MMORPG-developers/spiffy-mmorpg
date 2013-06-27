@@ -9,28 +9,28 @@
 
 MapClient::MapClient(unsigned int width, unsigned int height)
 {
-    model = new MapModel();
-    view = new MapView(width, height, model, this);
+    model_ = new MapModel();
+    view_ = new MapView(width, height, model_, this);
     
-    layout = new QHBoxLayout(this);
+    layout_ = new QHBoxLayout(this);
     
     // The MapView is the only thing displayed by the client.
-    layout->addWidget(view);
-    setLayout(layout);
+    layout_->addWidget(view_);
+    setLayout(layout_);
     
     // Make the view update whenever appropriate changes happen in the model.
-    QObject::connect(model, SIGNAL(cellUpdated(int, int)),
-                     view, SLOT(updateCell(int, int)));
-    QObject::connect(model, SIGNAL(playerMoved(int, int)),
-                     view, SLOT(movePlayer(int, int)));
+    QObject::connect(model_, SIGNAL(cellUpdated(int, int)),
+                     view_, SLOT(updateCell(int, int)));
+    QObject::connect(model_, SIGNAL(playerMoved(int, int)),
+                     view_, SLOT(movePlayer(int, int)));
 }
 
 MapClient::~MapClient()
 {
-    delete model;
+    delete model_;
     
     // I think Qt already cleans up children on destruction, so we shouldn't
-    // need to delete view or layout.
+    // need to delete view_ or layout_.
 }
 
 void MapClient::handleServerPacket(QString packet)
@@ -52,8 +52,8 @@ void MapClient::handleServerPacket(QString packet)
         // Create a MapCell from the given information.
         MapCell cell = is_wall? WALL : FLOOR;
         
-        // Update the model and view.
-        model->setCellAt(x, y, cell);
+        // Update the model.
+        model_->setCellAt(x, y, cell);
     }
     else if (words[0] == "move_in_map") {
         // The player has moved.
@@ -62,8 +62,8 @@ void MapClient::handleServerPacket(QString packet)
         int delta_x = words[1].toInt();
         int delta_y = words[2].toInt();
         
-        // Update the model and view.
-        model->movePlayer(delta_x, delta_y);
+        // Update the model.
+        model_->movePlayer(delta_x, delta_y);
     }
     else {
         // If we don't recognize the first word, it's an error.

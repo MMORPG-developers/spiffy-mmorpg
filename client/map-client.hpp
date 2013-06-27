@@ -52,12 +52,12 @@ class MapClient : public QFrame {
         void handleServerPacket(QString packet);
     
     private:
-        MapModel *model;
-        MapView *view;
+        MapModel *model_;
+        MapView *view_;
         
         // Could just as well be any other type of layout for now; there's only
         // one thing being laid out.
-        QHBoxLayout *layout;
+        QHBoxLayout *layout_;
 };
 
 #endif // _MAP_CLIENT_HPP_INCLUDED
