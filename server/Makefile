@@ -13,7 +13,7 @@ all: $(TARGETS)
 clean:
 	rm -f $(TARGETS)
 	rm -f $(DEPENDS)
-	rmdir $(DEPEND_DIR)
+	-rmdir $(DEPEND_DIR)
 
 # Instead of requiring the user to call `make depend` or anything like that,
 # maintain a directory with a dependency file for each .erl file. The
