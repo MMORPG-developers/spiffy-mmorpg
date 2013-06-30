@@ -9,11 +9,12 @@
 ]).
 
 % For now, when we send the client information about a map cell we send a
-% single code indicating whether it is floor or wall. These are the magic
-% codes. Don't change them unless they're changed in the client as well. And
-% whatever you do, don't put whitespace in them.
--define(FLOOR_CODE, <<"0">>).
--define(WALL_CODE, <<"1">>).
+% single magic value indicating whether it is floor, wall, or there's someone
+% there. These are the magic codes. Don't change them unless they're changed in
+% the client as well. And whatever you do, don't put whitespace in them.
+-define(FLOOR_CODE, <<"F">>).
+-define(WALL_CODE, <<"W">>).
+-define(ACTOR_CODE, <<"A">>).
 
 -include("map_cell.hrl").
 

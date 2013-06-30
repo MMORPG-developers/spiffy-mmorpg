@@ -47,10 +47,23 @@ void MapClient::handleServerPacket(QString packet)
         // Extract the arguments and convert them to the correct types.
         int x = words[1].toInt();
         int y = words[2].toInt();
-        int is_wall = words[3].toInt();
+        QString cell_type = words[3];
         
         // Create a MapCell from the given information.
-        MapCell cell = is_wall? WALL : FLOOR;
+        MapCell cell;
+        if (cell_type == "F") {
+            cell = FLOOR;
+        }
+        else if (cell_type == "W") {
+            cell = WALL;
+        }
+        else if (cell_type == "A") {
+            cell = PLAYER;
+        }
+        else {
+            // FIXME: Report an error.
+            cell = UNKNOWN;
+        }
         
         // Update the model.
         model_->setCellAt(x, y, cell);
