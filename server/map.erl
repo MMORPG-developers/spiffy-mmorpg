@@ -47,6 +47,8 @@ get_map_size(MapManager) ->
 % This function should be spawned as a process.
 % The resulting process serves as the authority on what's at each cell of the
 % map.
+% 
+% Makes blocking requests of various actor info processes.
 manage_map(Size) ->
     Map = create_map(Size),
     manage_map_helper(Map).

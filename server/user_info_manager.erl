@@ -60,6 +60,8 @@ get_actor_controller(UserInfoManager) ->
 % UserInfo is the user_info record containing the information about this
 % player.
 % UserController is the PID of the process controlling the player.
+% 
+% Makes blocking requests of no one.
 manage_user_info(UserInfo, UserController) ->
     receive
         % Someone's requested the PID of the controlling process.

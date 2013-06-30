@@ -1,10 +1,6 @@
-Coding conventions? What are those?
+     Erlang coding conventions and server-side design decisions
+    ------------------------------------------------------------
 
-Type safety? Yay, atoms!
-
-How do you do ... in Erlang?
- * 2-dimensional arrays
- * File I/O
 
 There are going to be a bunch of creatures and objects (actors?) in our world
 that need to be referred to in multiple places (example: in the map and in the
@@ -14,4 +10,29 @@ we'll create a thread (process?) to store the state, and then we'll pass the
 PID around like a pointer. Anyone who wants to know anything about the object
 will simply send the thread a message saying (for example) "hey, how many hit
 points you got?", or "hey, got any pick-axes?" ("go fish.").
+
+Message-passing is a nice synchronization primitive, but its biggest danger is
+deadlock. Our code is going to be divided up into a bunch of different
+processes sending messages in all directions. With some of those messages, the
+sender will immediately block until a response is received. It's okay for two
+processes to send messages to each other, but they can't both make such
+"blocking requests" of each other as that introduces a possibility of deadlock.
+In fact, as a general rule for server code, the (directed) graph of who makes
+blocking requests to whom MUST NOT CONTAIN ANY DIRECTED CYCLES. To facilitate
+this, the function spawned to create each process should specify which other
+processes it makes blocking requests to.
+
+
+
+     Random remarks that look like they were written at Noodle Hour
+    ----------------------------------------------------------------
+
+
+Coding conventions? What are those?
+
+Type safety? Yay, atoms!
+
+How do you do ... in Erlang?
+ * 2-dimensional arrays
+ * File I/O
 

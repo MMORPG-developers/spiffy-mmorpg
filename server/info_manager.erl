@@ -23,6 +23,8 @@
 % FIXME: The responsibility of checking and executing actions should be
 % delegated to a separate process.
 % 
+% Makes blocking requests of the map manager and various actor info processes.
+% 
 % Note: a lot of messages this process accepts take for granted that the sender
 % is using the correct tag. Since that tag will *always* originate on the
 % server, we needn't worry about malicious code falsifying its tag. So as long
@@ -52,11 +54,9 @@ manage_information_helper(MapManager, TagDict) ->
         % information.
         {Sender, request_map_all, {ObserverTag}} ->
             % Look up the observer in the dictionary.
-            % FIXME: Apparently dict:fetch returns a list. Do we just pattern
-            % match like this every time we do a dict:fetch?
             [ObserverInfo] = dict:fetch(ObserverTag, TagDict),
             
-            % For now, just to a line-of-sight calculation from their position.
+            % For now, just do a line-of-sight calculation from their position.
             % FIXME: Do more complicated calculations. Maybe the observer is
             % blind, for example.
             ObserverPosition = user_info_manager:get_actor_position(

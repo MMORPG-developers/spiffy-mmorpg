@@ -33,6 +33,8 @@ run() ->
 
 % wait_for_connections()
 % Sits around in a loop, accepting new connections.
+% 
+% Calls create_user, which makes blocking requests of the tag manager.
 wait_for_connections() ->
     % Spawn all the infrastructure we need.
     % FIXME: There should probably be a separate function that initializes all
@@ -70,6 +72,8 @@ wait_for_connections_helper(ListeningSocket, TagManager, MapManager,
 % TagManager is the PID of the process that allocates tags.
 % MapManager is the PID of the process that manages the map.
 % InfoManager is the PID of the process that manages information distribution.
+% 
+% Makes blocking requests of the tag manager.
 create_user(Socket, TagManager, MapManager, InfoManager) ->
     % Get a tag for the new user.
     Tag = tag:get_new_tag(TagManager),

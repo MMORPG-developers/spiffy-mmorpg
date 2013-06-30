@@ -24,6 +24,8 @@
 % The resulting process controls the player with the given Tag.
 % Socket is the socket by which it can communicate with the client.
 % InfoManager is the process that handles information distribution.
+% 
+% May make blocking requests of the info manager.
 control_user(Socket, Tag, InfoManager) ->
     % Create a separate process to sit around listening on the socket.
     spawn(?MODULE, listen_to_client, [Socket, self()]),
@@ -85,6 +87,8 @@ control_user_helper(Socket, Tag, InfoManager) ->
 % This function should be spawned as a process.
 % The resulting process listens to Socket, forwarding all incoming data to
 % UserController.
+% 
+% Makes blocking requests of no one.
 listen_to_client(Socket, UserController) ->
     % Get messages from the user as long as the connection is open,
     % then close the socket from our end.

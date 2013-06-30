@@ -43,6 +43,8 @@ free_tag(TagManager, Tag) ->
 % 
 % As an additional note: running out of tags that the client can handle is
 % really not a concern; we should run out of PIDs long before then.
+% 
+% Makes blocking requests of no one.
 manage_tags() ->
     % Don't generate tags too small just in case it makes a difference.
     manage_tags_helper(10).
