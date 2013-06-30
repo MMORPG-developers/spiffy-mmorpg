@@ -64,34 +64,6 @@ manage_information_helper(MapManager, TagDict) ->
             VisibleCells = get_all_visible_map_cells(MapManager,
                                                      ObserverPosition),
             
-            % --- This one ---
-            % FIXME: What's to stop the recipient from moving after we
-            % calculate their position but before we finish sending them the
-            % map data? If that happens, then we would refer to the remaining
-            % cells using incorrect relative positions. This looks like a nasty
-            % race condition....
-            % 
-            % Ok, here's a solution. Instead of sending coordinates relative to
-            % the current position, send them relative to the cell where the
-            % player entered the map. Whenever we send the player a new_map
-            % packet (meaning that they should forget all remembered map cells
-            % because they're in a new place), we reset that "origin square" to
-            % their current location. If the player enters a new map while
-            % we're in the middle of sending map data, we should stop sending
-            % it anyway because it's no longer valid. So we'll still need to
-            % detect that, but it's a much less common and less nasty race
-            % condition than the old one (and this one seems like it might be
-            % unavoidable anyway).
-            % 
-            % For larger maps which are divided into small chunks (like the
-            % main world), we'll need to establish a system of absolute
-            % coordinates. I recommend that we give each submap the PID of the
-            % submap storing the origin cell (position {0, 0}), so that we can
-            % easily check if two submaps are part of the same larger map. Each
-            % submap will also store the coordinates of its top-left corner (or
-            % some such) so that we can quickly calculate the coordinates of
-            % any cell relative to any actor.
-            
             % Send them the information.
             ObserverOrigin = user_info_manager:get_actor_origin(
                 ObserverInfo),
