@@ -23,10 +23,11 @@ clean:
 # a file without modifying at least one of its current dependencies, this
 # will guarantee that we build each .beam file when we need to.
 # 
-# The dependency directory must exist before we can do this (otherwise
-# `erlc -M` will fail). We could simply `mkdir -p` it every time we compile a
-# file, but make gives us a nicer way to handle it: make the directory an
-# "order-only prerequisite" (see
+# The dependency directory must exist before we can do this (otherwise `erlc
+# -M` will fail). However, its modification time will be updated every time we
+# access one of its files. We could make it an ordinary prerequisite and simply
+# `mkdir -p` it every time we compile a file, but make gives us a nicer way to
+# handle this: make the directory an "order-only prerequisite" (see
 # http://www.gnu.org/software/make/manual/make.html#Prerequisite-Types
 # ).
 %.beam: %.erl | $(DEPEND_DIR)
