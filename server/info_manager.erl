@@ -48,6 +48,28 @@ manage_information_helper(MapManager, TagDict) ->
                     manage_information_helper(MapManager, NewTagDict)
             end
     ;
+        % Remove an actor from the game. Don't ever call this except using your
+        % own tag.
+        % FIXME: In fact, this is an easy enough cheat I'm tempted to suggest
+        % implementing some sort of assurance you own that tag... maybe there's
+        % a second magic value generated with the tag that only the owner of
+        % the tag and the InfoManager know?
+        {_Sender, remove_actor, {Tag}} ->
+            % Use a case block so that we crash if the Tag is not in use.
+            % FIXME: Crash better if the tag is not in use.
+            case dict:is_key(Tag, TagDict) of
+                true ->
+                    % Figure out who has that tag and remove them from the
+                    % dictionary.
+                    [ActorInfo] = dict:fetch(Tag, TagDict),
+                    NewTagDict = dict:erase(Tag, TagDict),
+                    
+                    % Remove them from the map as well.
+                    MapManager ! {self(), remove_actor, {ActorInfo}},
+                    
+                    manage_information_helper(MapManager, NewTagDict)
+            end
+    ;
         % Send back to Sender, in separate messages (one for each cell), all
         % known information about the map.
         % ObserverTag should be the tag of the actor requesting the

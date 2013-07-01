@@ -80,6 +80,13 @@ control_user_helper(Socket, Tag, InfoManager) ->
     % TODO: the protocol should eventually support a new_map message as well.
     % But in that case, we'll need to figure out whose responsibility it is to
     % send all information about the new map.
+    ;
+        % Inform the relevant other processes that we're disconnecting from the
+        % server, then end this process.
+        {_Sender, cleanup, {}} ->
+            % The InfoManager currently takes care of all cleanup.
+            InfoManager ! {self(), remove_actor, {Tag}},
+            ok
     end.
 
 
@@ -94,10 +101,9 @@ listen_to_client(Socket, UserController) ->
     % then close the socket from our end.
     ok = listen_to_client_helper(Socket, UserController),
     
-    % Once the user disconnects, close our end of the socket.
-    % FIXME: We also need to notify the controller, who needs to tell the
-    % relevant other processes to clean us up. Currently, the ghosts of old
-    % players stay around indefinitely in the map.
+    % Once the user disconnects, close our end of the socket and clean up our
+    % character.
+    UserController ! {no_reply, cleanup, {}},
     gen_tcp:close(Socket).
 
 listen_to_client_helper(Socket, UserController) ->

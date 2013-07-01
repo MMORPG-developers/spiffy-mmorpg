@@ -80,10 +80,43 @@ manage_map_helper(Map, InfoManager) ->
         % Position is the position at which to place the actor.
         % ActorInfo is the PID of the process storing information on the actor.
         {_Sender, new_actor, {Position, ActorInfo}} ->
+            % Grab a copy of the map cell before we remove the actor.
+            CellBefore = array_2d:get(Position, Map),
+            
             % The real work is done by a helper function.
             % FIXME: The helper function and the message should probably take
             % their arguments in the same order.
             NewMap = add_actor_to_map(Map, ActorInfo, Position),
+            
+            % Get a copy of the map cell after we've removed the actor.
+            CellAfter = array_2d:get(Position, NewMap),
+            
+            % Inform everyone else the cell's been updated.
+            InfoManager ! {self(), update_map_cell,
+                           {Position, CellBefore, CellAfter}},
+            
+            manage_map_helper(NewMap, InfoManager)
+    ;
+        % Remove an actor from the map.
+        % ActorInfo is the PID of the process storing information on the actor.
+        {_Sender, remove_actor, {ActorInfo}} ->
+            % Figure out where the actor is.
+            Position = user_info_manager:get_actor_position(ActorInfo),
+            
+            % Grab a copy of the map cell before we remove the actor.
+            CellBefore = array_2d:get(Position, Map),
+            
+            % Remove the actor from the cell.
+            NewMap = remove_actor_from_map(Map, ActorInfo, Position),
+            
+            % Get a copy of the map cell after we've removed the actor.
+            CellAfter = array_2d:get(Position, NewMap),
+            
+            % Inform everyone else the cell's been updated.
+            InfoManager ! {self(), update_map_cell,
+                           {Position, CellBefore, CellAfter}},
+            
+            % For the rest of us, life goes on.
             manage_map_helper(NewMap, InfoManager)
     ;
         % Move an actor to a new location.
