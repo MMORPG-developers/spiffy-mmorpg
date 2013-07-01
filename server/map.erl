@@ -94,6 +94,11 @@ manage_map_helper(Map, InfoManager) ->
             % process to store the correct position, so just ask it.
             OldPosition = user_info_manager:get_actor_position(ActorInfo),
             
+            % Grab copies of the map_cell records for the start and end cells
+            % before they're changed to reflect the movement of the actor.
+            StartCellBefore = array_2d:get(OldPosition, Map),
+            EndCellBefore = array_2d:get(NewPosition, Map),
+            
             % Remove the actor from the map, then put it back in at the new
             % location.
             MapWithoutActor = remove_actor_from_map(Map, ActorInfo,
@@ -104,9 +109,21 @@ manage_map_helper(Map, InfoManager) ->
             % Update the actor's position.
             ActorInfo ! {self(), move_in_map, NewPosition},
             
+            % Get copies of the map_cell records for the start and end cells
+            % after they've been changed to reflect the movement of the actor.
+            StartCellAfter = array_2d:get(OldPosition, MapWithActorMoved),
+            EndCellAfter = array_2d:get(NewPosition, MapWithActorMoved),
+            
             % Notify anyone who should know that the actor moved.
             InfoManager ! {self(), actor_moved,
                            {ActorInfo, OldPosition, NewPosition}},
+            
+            % Notify anyone who should know that the start and end cells have
+            % been updated.
+            InfoManager ! {self(), update_map_cell,
+                           {OldPosition, StartCellBefore, StartCellAfter}},
+            InfoManager ! {self(), update_map_cell,
+                           {NewPosition, EndCellBefore, EndCellAfter}},
             
             manage_map_helper(MapWithActorMoved, InfoManager)
     end.

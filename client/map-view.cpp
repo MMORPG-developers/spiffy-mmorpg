@@ -81,9 +81,9 @@ void MapView::updateCell(int x, int y)
         
         // Special case: Always draw the player at the player's location.
         // FIXME: This is the server's job, not ours.
-        if (x == player_world_x_ && y == player_world_y_) {
-            cell = PLAYER;
-        }
+     // if (x == player_world_x_ && y == player_world_y_) {
+     //     cell = PLAYER;
+     // }
         
         // Display the appropriate image at the appropriate location.
         QPixmap image = getImage(cell);

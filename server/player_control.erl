@@ -93,6 +93,11 @@ listen_to_client(Socket, UserController) ->
     % Get messages from the user as long as the connection is open,
     % then close the socket from our end.
     ok = listen_to_client_helper(Socket, UserController),
+    
+    % Once the user disconnects, close our end of the socket.
+    % FIXME: We also need to notify the controller, who needs to tell the
+    % relevant other processes to clean us up. Currently, the ghosts of old
+    % players stay around indefinitely in the map.
     gen_tcp:close(Socket).
 
 listen_to_client_helper(Socket, UserController) ->
@@ -146,21 +151,34 @@ encode_update_map_cell(RelativePosition, CellInfo) ->
     EncodedHorizontal = list_to_binary(integer_to_list(DeltaColumns)),
     EncodedVertical = list_to_binary(integer_to_list(DeltaRows)),
     
-    % Encode the contents of the cell. Currently, we simply send one of two
-    % magic values indicating whether the cell is a floor or a wall.
-    % FIXME: Also list the actors in the cell.
-    EncodedCell = case CellInfo#map_cell.blocks_passage of
-        true ->
-            ?WALL_CODE
-    ;
-        false ->
-            ?FLOOR_CODE
-    end,
+    % Encode the contents of the cell.
+    EncodedCell = encode_map_cell(CellInfo),
     
     % Splice it all together.
     <<Prefix/binary, Separator/binary, EncodedHorizontal/binary,
         Separator/binary, EncodedVertical/binary, Separator/binary,
         EncodedCell/binary>>.
+
+% encode_map_cell(CellInfo)
+% Encodes a map cell as a binary, ready to be sent over the socket.
+% CellInfo is a map_cell record containing all known information about that
+% cell.
+encode_map_cell(CellInfo) ->
+    % Currently, we simply send one of three magic values indicating whether
+    % the cell is a floor, a wall, or a player.
+    case CellInfo#map_cell.actors of
+        [_FirstActor | _OtherActors] ->
+            ?ACTOR_CODE
+    ;
+        [] ->
+            case CellInfo#map_cell.blocks_passage of
+                true ->
+                    ?WALL_CODE
+            ;
+                false ->
+                    ?FLOOR_CODE
+            end
+    end.
 
 % decode_client_request(Data)
 % Parses a data packet from the client and turns it into a tuple representing
