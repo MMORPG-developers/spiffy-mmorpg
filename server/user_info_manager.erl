@@ -88,22 +88,8 @@ manage_user_info(UserInfo, UserController) ->
         % Note: telling the user info process will NOT cause the map to be
         % updated.
         {_Sender, move_in_map, {NewRow, NewColumn}} ->
-            % Calculate the change in position.
-            {OldRow, OldColumn} = UserInfo#user_info.position,
-            DeltaRows = NewRow - OldRow,
-            DeltaColumns = NewColumn - OldColumn,
-            DeltaPosition = {DeltaRows, DeltaColumns},
-            
             % Update our position.
             NewUserInfo = UserInfo#user_info{position={NewRow, NewColumn}},
-            
-            % Inform the UserController.
-            % FIXME: Should this in general be the responsibility of the
-            % ActorInfo? I'm not convinced that having the controller be
-            % notified whenever the underlying data is modified is a good
-            % precedent to set -- you can imagine something changing about a
-            % player that they don't know about.
-            UserController ! {no_reply, move_in_map, DeltaPosition},
             
             manage_user_info(NewUserInfo, UserController)
     end.

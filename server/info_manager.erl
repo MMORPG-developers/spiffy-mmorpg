@@ -69,6 +69,44 @@ manage_information_helper(MapManager, TagDict) ->
                 ObserverInfo),
             send_all_map_cells_info_to(Sender, VisibleCells, MapManager,
                                        ObserverOrigin),
+            
+            manage_information_helper(MapManager, TagDict)
+    ;
+        % Inform the relevant actors that the cell at Position has changed.
+        % OldCell and NewCell should be map_cell records indicating the state
+        % of the cell before and after the change (respectively).
+        {_Sender, update_map_cell, {Position, OldCell, NewCell}} ->
+            % Get a list of all tags.
+            AllTags = dict:fetch_keys(TagDict),
+            
+            % Look up all the tags in the TagDict to get a list of all actors.
+            % FIXME: There doesn't seem to be a dict:fetch_values function;
+            % should we write one and put it in one of our own libraries?
+            AllActors = lists:flatmap(fun(Tag) -> dict:fetch(Tag, TagDict) end,
+                                      AllTags),
+            
+            % Send updated map cell information to the relevant actors.
+            send_updated_cell_info_to_all(AllActors, Position, OldCell,
+                                          NewCell),
+            
+            manage_information_helper(MapManager, TagDict)
+    ;
+        % Inform the relevant actor (and possibly anyone who can see it?) that
+        % they've moved.
+        % FIXME: This should be passed the Tag, not the ActorInfo.
+        {_Sender, actor_moved, {ActorInfo, OldPosition, NewPosition}} ->
+            % Calculate the change in position.
+            {OldRow, OldColumn} = OldPosition,
+            {NewRow, NewColumn} = NewPosition,
+            DeltaRows = NewRow - OldRow,
+            DeltaColumns = NewColumn - OldColumn,
+            DeltaPosition = {DeltaRows, DeltaColumns},
+            
+            % Tell the actor it moved.
+            ActorController = user_info_manager:get_actor_controller(
+                ActorInfo),
+            ActorController ! {self(), move_in_map, DeltaPosition},
+            
             manage_information_helper(MapManager, TagDict)
     ;
         % Causes the specified actor to try to walk in the specified direction.
@@ -115,6 +153,12 @@ manage_information_helper(MapManager, TagDict) ->
     end.
 
 
+
+% get_seen_map_cell(ActorInfo, MapCell)
+% Return the given MapCell (a map_cell record), as seen by the given actor.
+% ActorInfo is the PID of the actor's info-managing process.
+get_seen_map_cell(_ActorInfo, MapCell) ->
+    MapCell.
 
 % get_movement_delta(Direction)
 % Returns the displacement induced by moving once in the specified Direction.
@@ -185,4 +229,47 @@ send_map_cell_info_to(Recipient, CellPosition, MapManager, Origin) ->
     % send the whole thing for now.
     MapCell = map:get_map_cell(MapManager, CellPosition),
     Recipient ! {self(), update_map_cell, {RelativePosition, MapCell}}.
+
+
+% send_updated_cell_info_to_all(Actors, Position, OldCell, NewCell)
+% Sends information on the map cell at the given Position to all actors in the
+% list Actors who should be notified that the cell was updated (so, for
+% example, don't notify the ones that can't see that cell).
+% OldCell is the old state of the cell (a map_cell record).
+% NewCell is the new state of the cell.
+send_updated_cell_info_to_all([], _Position, _OldCell, _NewCell) -> ok;
+send_updated_cell_info_to_all([Actor | OtherActors], Position, OldCell,
+                              NewCell) ->
+    send_updated_cell_info_to(Actor, Position, OldCell, NewCell),
+    send_updated_cell_info_to_all(OtherActors, Position, OldCell, NewCell).
+
+% send_updated_cell_info_to(Actor, Position, OldCell, NewCell)
+% As above, but for a single actor instead of many.
+send_updated_cell_info_to(Actor, Position, OldCell, NewCell) ->
+    SeenOldCell = get_seen_map_cell(Actor, OldCell),
+    SeenNewCell = get_seen_map_cell(Actor, NewCell),
+    
+    case SeenOldCell == SeenNewCell of
+        false ->
+            % If Actor can see that OldCell and NewCell differ, then tell them
+            % the cell changed.
+            ActorController = user_info_manager:get_actor_controller(Actor),
+            ActorOrigin = user_info_manager:get_actor_origin(Actor),
+            
+            {OriginRow, OriginColumn} = ActorOrigin,
+            {CellRow, CellColumn} = Position,
+            RelativeRow = CellRow - OriginRow,
+            RelativeColumn = CellColumn - OriginColumn,
+            RelativePosition = {RelativeRow, RelativeColumn},
+            
+            ActorController ! {self(), update_map_cell,
+                               {RelativePosition, NewCell}},
+            
+            ok
+    ;
+        true ->
+            % If Actor cannot see that OldCell and NewCell differ, don't tell
+            % them anything.
+            ok
+    end.
 

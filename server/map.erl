@@ -43,30 +43,38 @@ get_map_size(MapManager) ->
 
 
 
-% manage_map(Size)
+% manage_map(Size, InfoManager)
 % This function should be spawned as a process.
 % The resulting process serves as the authority on what's at each cell of the
 % map.
+% InfoManager is the PID of the process in charge of distributing information
+% among the actors.
 % 
 % Makes blocking requests of various actor info processes.
 manage_map(Size) ->
+    % Initialize the map.
     Map = create_map(Size),
-    manage_map_helper(Map).
+    
+    % Get the PID of the InfoManager, then enter the main loop.
+    receive
+        {_Sender, set_info_manager, InfoManager} ->
+            manage_map_helper(Map, InfoManager)
+    end.
 
-manage_map_helper(Map) ->
+manage_map_helper(Map, InfoManager) ->
     receive
         % Send back to Sender the size of the map, in the form {Rows, Columns}.
         {Sender, request_size, {}} ->
             Size = array_2d:size(Map),
             Sender ! {ok, {request_size, {}}, Size},
-            manage_map_helper(Map)
+            manage_map_helper(Map, InfoManager)
     ;
         % Send back to Sender the record containing information on the map cell
         % at the specified Position.
         {Sender, request_cell, {Position}} ->
             Cell = array_2d:get(Position, Map),
             Sender ! {ok, {request_cell, {Position}}, Cell},
-            manage_map_helper(Map)
+            manage_map_helper(Map, InfoManager)
     ;
         % Put a new actor in the map.
         % Position is the position at which to place the actor.
@@ -76,7 +84,7 @@ manage_map_helper(Map) ->
             % FIXME: The helper function and the message should probably take
             % their arguments in the same order.
             NewMap = add_actor_to_map(Map, ActorInfo, Position),
-            manage_map_helper(NewMap)
+            manage_map_helper(NewMap, InfoManager)
     ;
         % Move an actor to a new location.
         % ActorInfo is the PID of the process storing information on the actor.
@@ -93,13 +101,14 @@ manage_map_helper(Map) ->
             MapWithActorMoved = add_actor_to_map(MapWithoutActor, ActorInfo,
                                                  NewPosition),
             
-            % Notify the actor that it moved.
-            % In general, the actor's controller should also find out about
-            % this. At least for now, we'll let the actor's info process deal
-            % with telling the controller.
+            % Update the actor's position.
             ActorInfo ! {self(), move_in_map, NewPosition},
             
-            manage_map_helper(MapWithActorMoved)
+            % Notify anyone who should know that the actor moved.
+            InfoManager ! {self(), actor_moved,
+                           {ActorInfo, OldPosition, NewPosition}},
+            
+            manage_map_helper(MapWithActorMoved, InfoManager)
     end.
 
 % create_map(Size)

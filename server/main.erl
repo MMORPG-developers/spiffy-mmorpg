@@ -46,6 +46,17 @@ wait_for_connections() ->
     MapManager = spawn(map, manage_map, [{12, 16}]),
     InfoManager = spawn(info_manager, manage_information, [MapManager]),
     
+    % The MapManager and InfoManager both need to send messages to each other.
+    % Since one of them must be created first, we create the circular reference
+    % by sending a message to the first one created with the PID of the second
+    % one.
+    % FIXME: Is this actually a clean way of doing things? As long as the
+    % MapManager never makes blocking requests of the InfoManager we should be
+    % safe from deadlock, but creating circular references like this seems like
+    % questionably good design practice. That said, I don't see a better way of
+    % doing this.
+    MapManager ! {self(), set_info_manager, InfoManager},
+    
     % Create a socket to listen for connections.
     {ok, ListeningSocket} =
         gen_tcp:listen(?PORT, [binary, {packet, 0}, {active, false}]),
