@@ -24,6 +24,21 @@ processes it makes blocking requests to.
 
 
 
+     Miscellaneous notes about Erlang
+    ----------------------------------
+
+
+The inet library allows you to do various potentially useful things with
+sockets. Examples include:
+  * Automatically include a 1-, 2-, or 4-byte header with all packets:
+        inet:setopts(Socket, {packet, ?HEADER_SIZE}).
+  * Get the IP address of the machine on the other end of the socket (if, for
+    example, we want to allow certain administrative privileges only to people
+    logging in from certain whitelisted IP addresses):
+        {ok, {Address, Port}} = inet:peername(Socket).
+
+
+
      Random remarks that look like they were written at Noodle Hour
     ----------------------------------------------------------------
 
