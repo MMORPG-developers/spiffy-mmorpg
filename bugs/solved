@@ -1,0 +1,17 @@
+--------------------------------------------------
+Issue:
+Erlang gives deterministic output, even though random:seed(now()) has been
+called.
+
+Solution:
+Each process in Erlang has its own random seed. These are all set
+deterministically, which is useful for debugging, but introduces
+determinism. To solve the problem, set the random seed separately for each
+process.
+
+Name:
+Kyle Fox
+
+Date:
+2013-Jul-09
+--------------------------------------------------
