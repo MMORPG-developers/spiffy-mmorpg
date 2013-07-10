@@ -1,15 +1,24 @@
 .eunit
 deps
 *.o
-*.beam
 *.plt
 
+# Server files that should be ignored
+*.beam
+server/.dependencies
+
+# Qt files that should be ignored.
 *.pro
 moc_*
 
-client/client
+# Makefiles in Qt project directories
 client/Makefile
+qt-examples/*/Makefile
 
-qt-examples/snet/Makefile
+# Executables for Qt projects
+client/client
+
 qt-examples/snet/snet
+qt-examples/display-images/display-images
+qt-examples/counter/counter
 

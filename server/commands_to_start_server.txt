@@ -1,1 +1,1 @@
-existentialist_server:main().
+main:run().

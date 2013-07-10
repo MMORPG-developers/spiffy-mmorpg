@@ -2,11 +2,11 @@
 
 make clean
 rm -f Makefile
-rm -f counter.pro
+rm -f checkerboard.pro
 
 unamestr=`uname`
 if [[ "$unamestr" == 'Darwin' ]];  then
-	rm -rf counter.app
+	rm -rf checkerboard.app
 elif [[ "$unamestr" == 'Linux' ]]; then
-	rm -f counter
+	rm -f checkerboard
 fi
