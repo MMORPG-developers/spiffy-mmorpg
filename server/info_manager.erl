@@ -67,6 +67,10 @@ manage_information_helper(MapManager, TagDict) ->
                     % Remove them from the map as well.
                     MapManager ! {self(), remove_actor, {ActorInfo}},
                     
+                    % FIXME: We should probably also notify the tag manager
+                    % that that tag is now unused. But we don't have the PID of
+                    % the tag manager. That was poor planning....
+                    
                     manage_information_helper(MapManager, NewTagDict)
             end
     ;
