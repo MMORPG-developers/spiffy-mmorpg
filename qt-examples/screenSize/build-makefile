@@ -1,0 +1,11 @@
+#!/bin/bash
+
+qmake -project
+cat qmake-additional-configuration >> screenSize.pro
+
+unamestr=`uname`
+if [[ "$unamestr" == 'Darwin' ]];  then
+	qmake -makefile -spec macx-g++
+elif [[ "$unamestr" == 'Linux' ]]; then
+	qmake -makefile
+fi

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+make clean
+rm -f Makefile
+rm -f screenSize.pro
+
+unamestr=`uname`
+if [[ "$unamestr" == 'Darwin' ]];  then
+	rm -rf screenSize.app
+elif [[ "$unamestr" == 'Linux' ]]; then
+	rm -f screenSize
+fi
