@@ -1,4 +1,9 @@
 #!/bin/bash
 
-erl < commands_to_start_server.txt
+if [[ -e main.beam ]]; then
+    erl -s main start
+else
+    # This is far nicer than having Erlang generate a crash dump file.
+    echo "Error: you need to compile the code before you can run it."
+fi
 

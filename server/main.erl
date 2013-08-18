@@ -2,7 +2,7 @@
 
 -export([
 % For calling
-    run/0
+    start/0
 % For spawning
     % wait_for_connections/0
 ]).
@@ -14,9 +14,9 @@
 
 
 
-% run()
+% start()
 % Start the server.
-run() ->
+start() ->
     % For now, just call the function that does the actual work.
     % 
     % TODO: Theoretically, we can spawn that function instead of calling it.
