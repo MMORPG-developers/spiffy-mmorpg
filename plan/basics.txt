@@ -1,8 +1,0 @@
-These are some of the guiding priciples that this game is built on.
-
-- Any player should be able to do anything with enough training. It should
-  never be necessary to start a new character to see content.
-- Players should be able to make just about anything in the game. Equipment,
-  food, jewelry, potions, etc. should all be crafted.
-- Empty space should be avoided. New maps shouldn't be released until there's
-  something available to fill them.
