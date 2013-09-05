@@ -1,8 +1,12 @@
+% Note: this module is incomplete. Don't use it yet!
+
 -module(inter_process).
 
 -export([
 % FIXME: Consistency
 % For external use
+    send_notification/3,
+    make_request/3,
     main_loop/2
 % For spawning
     % wait_for_connections/0
@@ -56,7 +60,12 @@ main_loop(Handler = {Module, Function}, Data) ->
     ;
         _ ->
             % Crash if we get a malformed message.
-            error(invalid_message)
+            error(invalid_message),
+            % Set dummy values for Stop and NewData so that those variables are
+            % bound in all branches of the receive. (These two lines should
+            % never be executed.)
+            Stop = true,
+            NewData = Data
     end,
     case Stop of
         false ->
@@ -66,5 +75,29 @@ main_loop(Handler = {Module, Function}, Data) ->
         true ->
             % Stop.
             ok
+    end.
+
+
+% Sends the given notification to the process with the specified Pid.
+send_notification(Pid, MessageCommand, Arguments) ->
+    Pid ! {notification, MessageCommand, Arguments}.
+
+
+% Makes the specified request of the process with the specified Pid.
+% Returns either {ok, Response} where Response is the response to that request,
+% or {error, Reason} if something went wrong.
+make_request(Pid, MessageCommand, Arguments) ->
+    % Send the request.
+    Pid ! {request, self(), MessageCommand, Arguments},
+    % TODO: Write the code that sends these messages.
+    % FIXME: Add a single unifying atom to the beginning? Say, 'response'?
+    receive
+        {ok, MessageCommand, Response} ->
+            % Successfully got a response.
+            {ok, Response}
+    ;
+        {error, Reason} ->
+            % Recipient sent back an error.
+            {error, Reason}
     end.
 
