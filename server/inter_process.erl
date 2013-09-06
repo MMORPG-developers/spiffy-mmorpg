@@ -43,7 +43,9 @@
 % executing. NewData should be the (possibly modified) value of Data to be
 % passed to the next iteration of the loop. Response (if applicable) should be
 % an arbitrary Erlang object to be sent back to the requester.
+% 
 % FIXME: What if there's an error? Should the third return be {ok, Response}?
+% Or we could make it a 4-tuple, {Stop, NewData, OkOrError, Response}.
 main_loop(Handler = {Module, Function}, Data) ->
     % Get the next message.
     receive
