@@ -42,10 +42,8 @@
 % Stop should be a boolean indicating whether this process should stop
 % executing. NewData should be the (possibly modified) value of Data to be
 % passed to the next iteration of the loop. Response (if applicable) should be
-% an arbitrary Erlang object to be sent back to the requester.
-% 
-% FIXME: What if there's an error? Should the third return be {ok, Response}?
-% Or we could make it a 4-tuple, {Stop, NewData, OkOrError, Response}.
+% the Erlang object to be sent back to the requester. It should be a 2-tuple,
+% either {ok, Response} or {error, Reason}.
 main_loop(Handler = {Module, Function}, Data) ->
     % Get the next message.
     receive
@@ -60,6 +58,16 @@ main_loop(Handler = {Module, Function}, Data) ->
             % Handle a notification.
             {Stop, NewData} = apply(Module, Function,
                 [Data, notification, MessageCommand, Arguments])
+    ;
+        % FIXME: I'd rather avoid encoding the syntax for responses in three
+        % places. Ideally it should only show up where it's sent (above) and
+        % received (in make_request).
+        {response, _MessageCommand, _RequestedData} ->
+            % Because we time out when it takes too long to receive a response
+            % to a request, receiving unexpected responses is not an error.
+            % Instead, simply ignore it and go on with life.
+            Stop = false,
+            NewData = Data
     ;
         _ ->
             % Crash if we get a malformed message.
@@ -95,23 +103,26 @@ send_notification(Pid, MessageCommand, Arguments) ->
 make_request(Pid, MessageCommand, Arguments) ->
     % Send the request.
     Pid ! {request, self(), MessageCommand, Arguments},
-    % FIXME: Add a single unifying atom to the beginning? Say, 'response'?
     receive
-        {ok, MessageCommand, Response} ->
-            % Successfully got a response.
-            {ok, Response}
-    ;
-        {error, Reason} ->
-            % Recipient sent back an error.
-            {error, Reason}
+        {response, MessageCommand, RequestedData} ->
+            % Pass the response on to the caller.
+            RequestedData
     after
         ?REQUEST_TIMEOUT ->
+            % If no response comes, time out after a while.
             {error, timeout}
     end.
 
 % Send the given Response back to the Sender of a request.
 % MessageCommand and Arguments are the details of the request (see
 % make_request).
+% FIXME: Even if we include the entirety of the request in the response,
+% there's still a danger that we'll get the wrong response: if a request times
+% out and we send the same request, we might see the response to the first
+% request and think it's the response to the second request. We could add some
+% sort of magic unique identifier to each request to avoid this, but that seems
+% like a lot of work (both in coding and execution time) for very little
+% improvement.
 send_response(Sender, Response, MessageCommand, _Arguments) ->
-    Sender ! {ok, MessageCommand, Response}.
+    Sender ! {response, MessageCommand, Response}.
 
