@@ -105,8 +105,9 @@ create_user(Socket, TagAllocator, MapManager, InfoManager) ->
     % store its information.
     UserController = spawn(player_control, control_user,
                            [Socket, Tag, InfoManager]),
-    UserInfoManager = spawn(user_info_manager, manage_user_info,
-                            [UserInfo, UserController]),
+    UserInfoManager = spawn(inter_process, main_loop,
+                            [{player_info_manager, handler},
+                             {UserInfo, UserController}]),
     
     % Tell the info manager and map manager someone's joined the server.
     InfoManager ! {self(), new_actor, {UserInfoManager, Tag}},

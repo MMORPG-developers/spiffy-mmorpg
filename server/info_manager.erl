@@ -85,14 +85,14 @@ manage_information_helper(MapManager, TagDict) ->
             % For now, just do a line-of-sight calculation from their position.
             % FIXME: Do more complicated calculations. Maybe the observer is
             % blind, for example.
-            ObserverPosition = user_info_manager:get_actor_position(
-                ObserverInfo),
+            {ok, ObserverPosition} = inter_process:make_request(
+                ObserverInfo, get_position, {}),
             VisibleCells = get_all_visible_map_cells(MapManager,
                                                      ObserverPosition),
             
             % Send them the information.
-            ObserverOrigin = user_info_manager:get_actor_origin(
-                ObserverInfo),
+            {ok, ObserverOrigin} = inter_process:make_request(
+                ObserverInfo, get_origin, {}),
             send_all_map_cells_info_to(Sender, VisibleCells, MapManager,
                                        ObserverOrigin),
             
@@ -129,8 +129,8 @@ manage_information_helper(MapManager, TagDict) ->
             DeltaPosition = {DeltaRows, DeltaColumns},
             
             % Tell the actor it moved.
-            ActorController = user_info_manager:get_actor_controller(
-                ActorInfo),
+            {ok, ActorController} = inter_process:make_request(
+                ActorInfo, get_controller, {}),
             ActorController ! {self(), move_in_map, DeltaPosition},
             
             manage_information_helper(MapManager, TagDict)
@@ -153,8 +153,8 @@ manage_information_helper(MapManager, TagDict) ->
             {DeltaRows, DeltaColumns} = get_movement_delta(Direction),
             
             % Calculate the destination location.
-            {OldRow, OldColumn} = user_info_manager:get_actor_position(
-                ActorInfo),
+            {ok, {OldRow, OldColumn}} = inter_process:make_request(
+                ActorInfo, get_position, {}),
             NewRow = OldRow + DeltaRows,
             NewColumn = OldColumn + DeltaColumns,
             NewPosition = {NewRow, NewColumn},
@@ -279,8 +279,10 @@ send_updated_cell_info_to(Actor, Position, OldCell, NewCell) ->
         false ->
             % If Actor can see that OldCell and NewCell differ, then tell them
             % the cell changed.
-            ActorController = user_info_manager:get_actor_controller(Actor),
-            ActorOrigin = user_info_manager:get_actor_origin(Actor),
+            {ok, ActorController} = inter_process:make_request(
+                Actor, get_controller, {}),
+            {ok, ActorOrigin} = inter_process:make_request(
+                Actor, get_origin, {}),
             
             {OriginRow, OriginColumn} = ActorOrigin,
             {CellRow, CellColumn} = Position,

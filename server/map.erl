@@ -101,7 +101,8 @@ manage_map_helper(Map, InfoManager) ->
         % ActorInfo is the PID of the process storing information on the actor.
         {_Sender, remove_actor, {ActorInfo}} ->
             % Figure out where the actor is.
-            Position = user_info_manager:get_actor_position(ActorInfo),
+            {ok, Position} = inter_process:make_request(
+                ActorInfo, get_position, {}),
             
             % Grab a copy of the map cell before we remove the actor.
             CellBefore = array_2d:get(Position, Map),
@@ -125,7 +126,8 @@ manage_map_helper(Map, InfoManager) ->
         {_Sender, move_actor, {ActorInfo, NewPosition}} ->
             % Figure out the actor's old position. We trust the ActorInfo
             % process to store the correct position, so just ask it.
-            OldPosition = user_info_manager:get_actor_position(ActorInfo),
+            {ok, OldPosition} = inter_process:make_request(
+                ActorInfo, get_position, {}),
             
             % Grab copies of the map_cell records for the start and end cells
             % before they're changed to reflect the movement of the actor.
@@ -140,7 +142,10 @@ manage_map_helper(Map, InfoManager) ->
                                                  NewPosition),
             
             % Update the actor's position.
-            ActorInfo ! {self(), move_in_map, NewPosition},
+            % FIXME: Don't obscure the fact that that third argument is a
+            % tuple.
+            inter_process:send_notification(ActorInfo,
+                move_in_map, NewPosition),
             
             % Get copies of the map_cell records for the start and end cells
             % after they've been changed to reflect the movement of the actor.
