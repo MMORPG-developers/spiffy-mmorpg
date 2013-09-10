@@ -88,7 +88,7 @@ wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
 % Makes blocking requests of the tag manager.
 create_user(Socket, TagAllocator, MapManager, InfoManager) ->
     % Get a tag for the new user.
-    Tag = inter_process:make_request(TagAllocator, new_tag, {}),
+    {ok, Tag} = inter_process:make_request(TagAllocator, new_tag, {}),
     
     % Create an info record for the user.
     % For now, just put them in the top-left corner.
