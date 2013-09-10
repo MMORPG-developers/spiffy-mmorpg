@@ -42,7 +42,8 @@ wait_for_connections() ->
     % PIDs we'll need to pass around -- much more than what we've got now and
     % we'll need a better solution than just having every function take all the
     % PIDs as arguments.
-    TagManager = spawn(tag, manage_tags, []),
+    TagAllocator = spawn(inter_process, main_loop,
+                         [{tag, tag_allocator_handler}, {}]),
     MapManager = spawn(map, manage_map, [{12, 16}]),
     InfoManager = spawn(info_manager, manage_information, [MapManager]),
     
@@ -61,33 +62,33 @@ wait_for_connections() ->
     {ok, ListeningSocket} =
         gen_tcp:listen(?PORT, [binary, {packet, 0}, {active, false}]),
     
-    wait_for_connections_helper(ListeningSocket, TagManager, MapManager,
+    wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
                                 InfoManager).
 
-wait_for_connections_helper(ListeningSocket, TagManager, MapManager,
+wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
                             InfoManager) ->
     % Accept a new connection.
     {ok, Socket} = gen_tcp:accept(ListeningSocket),
     
     % Create a new user for the connection.
-    create_user(Socket, TagManager, MapManager, InfoManager),
+    create_user(Socket, TagAllocator, MapManager, InfoManager),
     
     % Wait for more connections.
-    wait_for_connections_helper(ListeningSocket, TagManager, MapManager,
+    wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
                                 InfoManager).
 
 
 
-% create_user(Socket, TagManager, MapManager, InfoManager).
+% create_user(Socket, TagAllocator, MapManager, InfoManager).
 % Does all the necessary setup for a new user.
-% TagManager is the PID of the process that allocates tags.
+% TagAllocator is the PID of the process that allocates tags.
 % MapManager is the PID of the process that manages the map.
 % InfoManager is the PID of the process that manages information distribution.
 % 
 % Makes blocking requests of the tag manager.
-create_user(Socket, TagManager, MapManager, InfoManager) ->
+create_user(Socket, TagAllocator, MapManager, InfoManager) ->
     % Get a tag for the new user.
-    Tag = tag:get_new_tag(TagManager),
+    Tag = inter_process:make_request(TagAllocator, new_tag, {}),
     
     % Create an info record for the user.
     % For now, just put them in the top-left corner.
