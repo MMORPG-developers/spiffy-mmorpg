@@ -7,8 +7,6 @@
     main_loop/2
 ]).
 
--include("handler.hrl").
-
 % Amount of time after which to give up on waiting for a request, in
 % milliseconds.
 -define(REQUEST_TIMEOUT, 5000).
@@ -38,9 +36,9 @@
 % In the case of a notification, the Handler function should return a 2-tuple
 % {Status, NewData}. In the case of a request, it should return a
 % 3-tuple {Status, NewData, Response}.
-% Status should be one of the two constants defined in handler.hrl:
-% HANDLER_CONTINUE or HANDLER_END, indicating whether this process should
-% keep executing or stop executing (respectively).
+% Status should be an atom, either 'handler_continue' or 'handler_end',
+% indicating whether this process should keep executing or stop executing
+% (respectively).
 % NewData should be the (possibly modified) value of Data to be
 % passed to the next iteration of the loop. Response (if applicable) should be
 % the Erlang object to be sent back to the requester. It should be a 2-tuple,
@@ -67,7 +65,7 @@ main_loop(Handler = {Module, Function}, Data) ->
             % Because we time out when it takes too long to receive a response
             % to a request, receiving unexpected responses is not an error.
             % Instead, simply ignore it and go on with life.
-            Status = ?HANDLER_CONTINUE,
+            Status = handler_continue,
             NewData = Data
     ;
         _ ->
@@ -76,15 +74,15 @@ main_loop(Handler = {Module, Function}, Data) ->
             % Set dummy values for Status and NewData so that those variables
             % are bound in all branches of the receive. (These two lines should
             % never be executed.)
-            Status = ?HANDLER_END,
+            Status = handler_end,
             NewData = Data
     end,
     case Status of
-        ?HANDLER_CONTINUE ->
+        handler_continue ->
             % Keep going.
             main_loop(Handler, NewData)
     ;
-        ?HANDLER_END ->
+        handler_end ->
             % End this process.
             ok
     end.
