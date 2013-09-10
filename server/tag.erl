@@ -1,38 +1,17 @@
 -module(tag).
 
 -export([
-% For calling
-    get_new_tag/1,
-    free_tag/2,
-% For spawning
-    manage_tags/0
+    tag_allocator_handler/4
 ]).
 
+-include("handler.hrl").
 
-
-% get_new_tag(TagManager)
-% Allocate a new tag and return it.
-% TagManager is the PID of the process that manages tag allocation.
-get_new_tag(TagManager) ->
-    TagManager ! {self(), request_tag, {}},
-    receive
-        {ok, {request_tag, {}}, Tag} ->
-            Tag
-    end.
-
-% free_tag(TagManager, Tag)
-% Free up a tag for future use.
-% TagManager is the PID of the process that manages tag allocation.
-% Tag is the tag to be freed.
-free_tag(TagManager, Tag) ->
-    TagManager ! {self(), free_tag, {Tag}}.
-
-
-
-
-% manage_tags()
-% This function should be spawned as a process.
+% This function should be used as the handler of a process
+% (see inter_process:main_loop/2).
 % The resulting process is in charge of allocating and deallocating tags.
+% 
+% The Data tuple given to this process when it's spawned should be an empty
+% tuple.
 % 
 % Having a single tag-managing thread will probably be too much of a bottleneck
 % for a distributed server. However, once we reach such a large scale, we
@@ -41,33 +20,27 @@ free_tag(TagManager, Tag) ->
 % distributed servers can generate unique tags without needing a centralized
 % tag manager.
 % 
-% As an additional note: running out of tags that the client can handle is
-% really not a concern; we should run out of PIDs long before then.
+% Because not everything with a tag will have a PID (for example, items have
+% tags but not PIDs), we'll eventually have to come up with a way of avoiding
+% running out of tags.
 % 
 % Makes blocking requests of no one.
-manage_tags() ->
-    % Don't generate tags too small just in case it makes a difference.
-    manage_tags_helper(10).
 
-% manage_tags_helper(Previous)
-manage_tags_helper(Previous) ->
-    % Currently, we use the simplest algorithm: generate consecutive integers
-    % as tags, and don't pay attention to which ones have been freed. This
-    % won't work in the long term, but it's probably going to be a long time
-    % before it's really a problem.
-    receive
-        % Someone wants a new tag.
-        {Sender, request_tag, {}} ->
-            % Give them the next integer.
-            NewTag = Previous + 1,
-            Sender ! {ok, {request_tag, {}}, NewTag},
-            manage_tags_helper(NewTag)
-    ;
-        % Someone's done with a tag.
-        {_Sender, free_tag, {_Tag}} ->
-            % The OS/161 solution: free is a no-op.
-            % FIXME: Don't allow this once we have a server that can be up for
-            % prolonged periods of time.
-            manage_tags_helper(Previous)
-    end.
+% Just spawned; set up default values and call the appropriate version of the
+% handler (yay, pattern matching!).
+tag_allocator_handler({}, MessageType, MessageCommand, MessageArguments) ->
+    tag_allocator_handler({10}, MessageType, MessageCommand, MessageArguments);
+
+% Someone wants a new tag.
+tag_allocator_handler({Previous}, request, new_tag, {}) ->
+    % Give them the next integer.
+    NewTag = Previous + 1,
+    {?HANDLER_CONTINUE, {NewTag}, {ok, NewTag}};
+
+% Someone's done with a tag.
+tag_allocator_handler({Previous}, notification, free_tag, {_Tag}) ->
+    % The OS/161 solution: free is a no-op.
+    % FIXME: Don't allow this once we have a server that can be up for
+    % prolonged periods of time.
+    {?HANDLER_CONTINUE, {Previous}}.
 
