@@ -10,7 +10,7 @@
 -define(PORT, 6667).
 
 -include("map_cell.hrl").
--include("user_info.hrl").
+-include("player_info.hrl").
 
 
 
@@ -34,7 +34,7 @@ start() ->
 % wait_for_connections()
 % Sits around in a loop, accepting new connections.
 % 
-% Calls create_user, which makes blocking requests of the tag manager.
+% Calls create_player, which makes blocking requests of the tag manager.
 wait_for_connections() ->
     % Spawn all the infrastructure we need.
     % FIXME: There should probably be a separate function that initializes all
@@ -70,8 +70,8 @@ wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
     % Accept a new connection.
     {ok, Socket} = gen_tcp:accept(ListeningSocket),
     
-    % Create a new user for the connection.
-    create_user(Socket, TagAllocator, MapManager, InfoManager),
+    % Create a new player for the connection.
+    create_player(Socket, TagAllocator, MapManager, InfoManager),
     
     % Wait for more connections.
     wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
@@ -79,39 +79,39 @@ wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
 
 
 
-% create_user(Socket, TagAllocator, MapManager, InfoManager).
-% Does all the necessary setup for a new user.
+% create_player(Socket, TagAllocator, MapManager, InfoManager).
+% Does all the necessary setup for a new player.
 % TagAllocator is the PID of the process that allocates tags.
 % MapManager is the PID of the process that manages the map.
 % InfoManager is the PID of the process that manages information distribution.
 % 
 % Makes blocking requests of the tag manager.
-create_user(Socket, TagAllocator, MapManager, InfoManager) ->
-    % Get a tag for the new user.
+create_player(Socket, TagAllocator, MapManager, InfoManager) ->
+    % Get a tag for the new player.
     {ok, Tag} = inter_process:make_request(TagAllocator, new_tag, {}),
     
-    % Create an info record for the user.
+    % Create an info record for the player.
     % For now, just put them in the top-left corner.
-    % FIXME: We seriously need a better way of placing users. But that might
+    % FIXME: We seriously need a better way of placing players. But that might
     % have to wait until we have enough maps to actually designate a newbie
     % area....
-    % FIXME: Actually have the user log in and assign them a preexisting
+    % FIXME: Actually have the player log in and assign them a preexisting
     % character, rather than simply creating a fresh one for every login.
     Position = {1, 1},
-    UserInfo = #user_info{tag=Tag, maps=[MapManager], position=Position,
+    PlayerInfo = #player_info{tag=Tag, maps=[MapManager], position=Position,
                           origin=Position},
     
-    % Spawn two processes for the user: one to control it and the other to
+    % Spawn two processes for the player: one to control it and the other to
     % store its information.
-    UserController = spawn(player_control, control_user,
+    PlayerController = spawn(player_control, control_player,
                            [Socket, Tag, InfoManager]),
-    UserInfoManager = spawn(inter_process, main_loop,
+    PlayerInfoManager = spawn(inter_process, main_loop,
                             [{player_info_manager, handler},
-                             {UserInfo, UserController}]),
+                             {PlayerInfo, PlayerController}]),
     
     % Tell the info manager and map manager someone's joined the server.
-    InfoManager ! {self(), new_actor, {UserInfoManager, Tag}},
-    MapManager ! {self(), new_actor, {Position, UserInfoManager}},
+    InfoManager ! {self(), new_actor, {PlayerInfoManager, Tag}},
+    MapManager ! {self(), new_actor, {Position, PlayerInfoManager}},
     
     ok.
 
