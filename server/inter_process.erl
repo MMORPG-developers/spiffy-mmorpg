@@ -1,14 +1,13 @@
 -module(inter_process).
 
--export([
 % FIXME: Consistency
-% For external use
+-export([
     send_notification/3,
     make_request/3,
     main_loop/2
-% For spawning
-    % ...
 ]).
+
+-include("handler.hrl").
 
 % Amount of time after which to give up on waiting for a request, in
 % milliseconds.
@@ -26,38 +25,40 @@
 % function each time it is called, along with information about the message
 % being handled.
 % 
-% The Handler function should take 5 arguments:
+% The Handler function should take 4 arguments:
 %   * Data --
 %       The Data object from above.
 %   * MessageType --
 %       An atom, either 'request' or 'notification'.
 %   * MessageCommand --
 %       An atom indicating the command in the message.
-%   * Arguments --
+%   * MessageArguments --
 %       A tuple containing the arguments to the command.
 % 
 % In the case of a notification, the Handler function should return a 2-tuple
-% {Stop, NewData}. In the case of a request, it should return a 3-tuple {Stop,
-% NewData, Response}.
-% Stop should be a boolean indicating whether this process should stop
-% executing. NewData should be the (possibly modified) value of Data to be
+% {Status, NewData}. In the case of a request, it should return a
+% 3-tuple {Status, NewData, Response}.
+% Status should be one of the two constants defined in handler.hrl:
+% HANDLER_CONTINUE or HANDLER_END, indicating whether this process should
+% keep executing or stop executing (respectively).
+% NewData should be the (possibly modified) value of Data to be
 % passed to the next iteration of the loop. Response (if applicable) should be
 % the Erlang object to be sent back to the requester. It should be a 2-tuple,
 % either {ok, Response} or {error, Reason}.
 main_loop(Handler = {Module, Function}, Data) ->
     % Get the next message.
     receive
-        {request, Sender, MessageCommand, Arguments} ->
+        {request, Sender, MessageCommand, MessageArguments} ->
             % Handle a request.
-            {Stop, NewData, Response} = apply(Module, Function,
-                [Data, request, MessageCommand, Arguments]),
+            {Status, NewData, Response} = apply(Module, Function,
+                [Data, request, MessageCommand, MessageArguments]),
             % Send the response back to the requester.
-            send_response(Sender, Response, MessageCommand, Arguments)
+            send_response(Sender, Response, MessageCommand, MessageArguments)
     ;
-        {notification, MessageCommand, Arguments} ->
+        {notification, MessageCommand, MessageArguments} ->
             % Handle a notification.
-            {Stop, NewData} = apply(Module, Function,
-                [Data, notification, MessageCommand, Arguments])
+            {Status, NewData} = apply(Module, Function,
+                [Data, notification, MessageCommand, MessageArguments])
     ;
         % FIXME: I'd rather avoid encoding the syntax for responses in three
         % places. Ideally it should only show up where it's sent (above) and
@@ -66,43 +67,43 @@ main_loop(Handler = {Module, Function}, Data) ->
             % Because we time out when it takes too long to receive a response
             % to a request, receiving unexpected responses is not an error.
             % Instead, simply ignore it and go on with life.
-            Stop = false,
+            Status = ?HANDLER_CONTINUE,
             NewData = Data
     ;
         _ ->
             % Crash if we get a malformed message.
             error(invalid_message),
-            % Set dummy values for Stop and NewData so that those variables are
-            % bound in all branches of the receive. (These two lines should
+            % Set dummy values for Status and NewData so that those variables
+            % are bound in all branches of the receive. (These two lines should
             % never be executed.)
-            Stop = true,
+            Status = ?HANDLER_END,
             NewData = Data
     end,
-    case Stop of
-        false ->
+    case Status of
+        ?HANDLER_CONTINUE ->
             % Keep going.
             main_loop(Handler, NewData)
     ;
-        true ->
-            % Stop.
+        ?HANDLER_END ->
+            % End this process.
             ok
     end.
 
 
 % Sends the given notification to the process with the specified Pid.
-send_notification(Pid, MessageCommand, Arguments) ->
-    Pid ! {notification, MessageCommand, Arguments}.
+send_notification(Pid, MessageCommand, MessageArguments) ->
+    Pid ! {notification, MessageCommand, MessageArguments}.
 
 
 % Makes the specified request of the process with the specified Pid.
 % MessageCommand should be an atom indicating the nature of the request;
-% Arguments should be a tuple of arguments clarifying the details of the
+% MessageArguments should be a tuple of arguments clarifying the details of the
 % request.
 % Returns either {ok, Response} where Response is the response to that request,
 % or {error, Reason} if something went wrong.
-make_request(Pid, MessageCommand, Arguments) ->
+make_request(Pid, MessageCommand, MessageArguments) ->
     % Send the request.
-    Pid ! {request, self(), MessageCommand, Arguments},
+    Pid ! {request, self(), MessageCommand, MessageArguments},
     receive
         {response, MessageCommand, RequestedData} ->
             % Pass the response on to the caller.
@@ -114,15 +115,17 @@ make_request(Pid, MessageCommand, Arguments) ->
     end.
 
 % Send the given Response back to the Sender of a request.
-% MessageCommand and Arguments are the details of the request (see
+% MessageCommand and MessageArguments are the details of the request (see
 % make_request).
+% 
 % FIXME: Even if we include the entirety of the request in the response,
 % there's still a danger that we'll get the wrong response: if a request times
 % out and we send the same request, we might see the response to the first
-% request and think it's the response to the second request. We could add some
-% sort of magic unique identifier to each request to avoid this, but that seems
-% like a lot of work (both in coding and execution time) for very little
-% improvement.
-send_response(Sender, Response, MessageCommand, _Arguments) ->
+% request and think it's the response to the second request.
+% To fix this, add some sort of magic unique identifier to each request.
+% For instance, some hash of the current time?
+% In theory we could do consecutive integers, but how are we going to keep
+% count?
+send_response(Sender, Response, MessageCommand, _MessageArguments) ->
     Sender ! {response, MessageCommand, Response}.
 
