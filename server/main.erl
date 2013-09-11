@@ -44,7 +44,8 @@ wait_for_connections() ->
     % PIDs as arguments.
     TagAllocator = inter_process:spawn_with_handler(
         {tag_allocator, handler}, {}),
-    MapManager = spawn(map, manage_map, [{12, 16}]),
+    MapManager = inter_process:spawn_with_handler(
+        {map_manager, handler}, {{12, 16}}),
     InfoManager = spawn(info_manager, manage_information, [MapManager]),
     
     % The MapManager and InfoManager both need to send messages to each other.
@@ -56,7 +57,7 @@ wait_for_connections() ->
     % safe from deadlock, but creating circular references like this seems like
     % questionably good design practice. That said, I don't see a better way of
     % doing this.
-    MapManager ! {self(), set_info_manager, InfoManager},
+    inter_process:send_notification(MapManager, subscribe, {InfoManager}),
     
     % Create a socket to listen for connections.
     {ok, ListeningSocket} =
@@ -110,7 +111,8 @@ create_player(Socket, TagAllocator, MapManager, InfoManager) ->
     
     % Tell the info manager and map manager someone's joined the server.
     InfoManager ! {self(), new_actor, {PlayerInfoManager, Tag}},
-    MapManager ! {self(), new_actor, {Position, PlayerInfoManager}},
+    inter_process:send_notification(
+        MapManager, new_actor, {Position, PlayerInfoManager}),
     
     ok.
 

@@ -7,6 +7,7 @@
     spawn_with_handler/2,
     send_notification/3,
     make_request/3,
+    notify_all/3,
 % For spawning
     main_loop/2
 ]).
@@ -103,6 +104,15 @@ spawn_with_handler(Handler, Data) ->
 % Sends the given notification to the process with the specified Pid.
 send_notification(Pid, MessageCommand, MessageArguments) ->
     Pid ! {notification, MessageCommand, MessageArguments}.
+
+
+% notify_all(Processes, MessageCommand, MessageArguments):
+% Sends the given notification to all of the given processes.
+notify_all([], _MessageCommand, _MessageArguments) ->
+    ok;
+notify_all([Pid|OtherProcesses], MessageCommand, MessageArguments) ->
+    send_notification(Pid, MessageCommand, MessageArguments),
+    notify_all(OtherProcesses, MessageCommand, MessageArguments).
 
 
 % Makes the specified request of the process with the specified Pid.

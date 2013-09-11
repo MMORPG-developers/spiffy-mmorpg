@@ -65,7 +65,8 @@ manage_information_helper(MapManager, TagDict) ->
                     NewTagDict = dict:erase(Tag, TagDict),
                     
                     % Remove them from the map as well.
-                    MapManager ! {self(), remove_actor, {ActorInfo}},
+                    inter_process:send_notification(
+                        MapManager, remove_actor, {ActorInfo}),
                     
                     % FIXME: We should probably also notify the tag manager
                     % that that tag is now unused. But we don't have the PID of
@@ -162,12 +163,13 @@ manage_information_helper(MapManager, TagDict) ->
             % Check if the Actor can walk into the destination cell or not.
             % Note that since walking is by definition between adjacent cells,
             % we need not check if there are cells in between.
-            DestinationCell = map:get_map_cell(MapManager, NewPosition),
+            {ok, DestinationCell} = inter_process:make_request(
+                MapManager, get_cell, {NewPosition}),
             case DestinationCell#map_cell.blocks_passage of
                 false ->
                     % The actor can move into that square.
-                    MapManager ! {self(), move_actor, {ActorInfo,
-                                  NewPosition}}
+                    inter_process:send_notification(
+                        MapManager, move_actor, {ActorInfo, NewPosition})
             ;
                 true ->
                     % The actor cannot move into that square.
@@ -217,7 +219,9 @@ get_movement_delta(northwest) ->
 get_all_visible_map_cells(MapManager, _ObserverPosition) ->
     % Currently, just return a list of all cells in the map.
     % FIXME: Do some semblance of actual line-of-sight calculations.
-    {NumberOfRows, NumberOfColumns} = map:get_map_size(MapManager),
+    {ok, MapSize} = inter_process:make_request(
+        MapManager, get_size, {}),
+    {NumberOfRows, NumberOfColumns} = MapSize,
     
     % Use list comprehensions to return the Cartesian product of
     % [0 .. NumberOfRows - 1] and [0 .. NumberOfColumns - 1].
@@ -253,7 +257,8 @@ send_map_cell_info_to(Recipient, CellPosition, MapManager, Origin) ->
     
     % Since we don't have any real information in MapCells yet anyway, just
     % send the whole thing for now.
-    MapCell = map:get_map_cell(MapManager, CellPosition),
+    {ok, MapCell} = inter_process:make_request(
+        MapManager, get_cell, {CellPosition}),
     Recipient ! {self(), update_map_cell, {RelativePosition, MapCell}}.
 
 
