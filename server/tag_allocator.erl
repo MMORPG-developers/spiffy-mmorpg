@@ -1,7 +1,7 @@
--module(tag).
+-module(tag_allocator).
 
 -export([
-    tag_allocator_handler/4
+    handler/4
 ]).
 
 % This function should be used as the handler of a process
@@ -26,17 +26,17 @@
 
 % Just spawned; set up default values and call the appropriate version of the
 % handler (yay, pattern matching!).
-tag_allocator_handler({}, MessageType, MessageCommand, MessageArguments) ->
-    tag_allocator_handler({10}, MessageType, MessageCommand, MessageArguments);
+handler({}, MessageType, MessageCommand, MessageArguments) ->
+    handler({10}, MessageType, MessageCommand, MessageArguments);
 
 % Someone wants a new tag.
-tag_allocator_handler({Previous}, request, new_tag, {}) ->
+handler({Previous}, request, new_tag, {}) ->
     % Give them the next integer.
     NewTag = Previous + 1,
     {handler_continue, {NewTag}, {ok, NewTag}};
 
 % Someone's done with a tag.
-tag_allocator_handler({Previous}, notification, free_tag, {_Tag}) ->
+handler({Previous}, notification, free_tag, {_Tag}) ->
     % The OS/161 solution: free is a no-op.
     % FIXME: Don't allow this once we have a server that can be up for
     % prolonged periods of time.

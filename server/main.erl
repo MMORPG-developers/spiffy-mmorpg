@@ -43,7 +43,7 @@ wait_for_connections() ->
     % we'll need a better solution than just having every function take all the
     % PIDs as arguments.
     TagAllocator = spawn(inter_process, main_loop,
-                         [{tag, tag_allocator_handler}, {}]),
+                         [{tag_allocator, handler}, {}]),
     MapManager = spawn(map, manage_map, [{12, 16}]),
     InfoManager = spawn(info_manager, manage_information, [MapManager]),
     
