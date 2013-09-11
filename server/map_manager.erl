@@ -74,11 +74,8 @@ handler({Map, NotifiedProcesses}, notification, new_actor,
     CellAfter = array_2d:get(Position, NewMap),
     
     % Inform everyone else the cell's been updated.
-    % FIXME: VERY temporary hack to make this work until the info manager
-    % is updated to the new protocols.
-    [InfoManager] = NotifiedProcesses,
-    InfoManager ! {self(), update_map_cell,
-                   {Position, CellBefore, CellAfter}},
+    inter_process:notify_all(NotifiedProcesses, update_map_cell,
+        {Position, CellBefore, CellAfter}),
     
     {handler_continue, {NewMap, NotifiedProcesses}};
 
@@ -101,11 +98,8 @@ handler({Map, NotifiedProcesses}, notification, remove_actor,
     CellAfter = array_2d:get(Position, NewMap),
     
     % Inform everyone else the cell's been updated.
-    % FIXME: VERY temporary hack to make this work until the info manager
-    % is updated to the new protocols.
-    [InfoManager] = NotifiedProcesses,
-    InfoManager ! {self(), update_map_cell,
-                   {Position, CellBefore, CellAfter}},
+    inter_process:notify_all(NotifiedProcesses, update_map_cell,
+        {Position, CellBefore, CellAfter}),
     
     {handler_continue, {NewMap, NotifiedProcesses}};
 
@@ -144,18 +138,15 @@ handler({Map, NotifiedProcesses}, notification, move_actor,
     EndCellAfter = array_2d:get(NewPosition, MapWithActorMoved),
     
     % Notify anyone who should know that the actor moved.
-    % FIXME: VERY temporary hack to make this work until the info manager
-    % is updated to the new protocols.
-    [InfoManager] = NotifiedProcesses,
-    InfoManager ! {self(), actor_moved,
-                   {ActorInfo, OldPosition, NewPosition}},
+    inter_process:notify_all(NotifiedProcesses, actor_moved,
+        {ActorInfo, OldPosition, NewPosition}),
     
     % Notify anyone who should know that the start and end cells have
     % been updated.
-    InfoManager ! {self(), update_map_cell,
-                   {OldPosition, StartCellBefore, StartCellAfter}},
-    InfoManager ! {self(), update_map_cell,
-                   {NewPosition, EndCellBefore, EndCellAfter}},
+    inter_process:notify_all(NotifiedProcesses, update_map_cell,
+        {OldPosition, StartCellBefore, StartCellAfter}),
+    inter_process:notify_all(NotifiedProcesses, update_map_cell,
+        {NewPosition, EndCellBefore, EndCellAfter}),
     
     {handler_continue, {MapWithActorMoved, NotifiedProcesses}}.
 

@@ -46,7 +46,8 @@ wait_for_connections() ->
         {tag_allocator, handler}, {}),
     MapManager = inter_process:spawn_with_handler(
         {map_manager, handler}, {{12, 16}}),
-    InfoManager = spawn(info_manager, manage_information, [MapManager]),
+    InfoManager = inter_process:spawn_with_handler(
+        {info_manager, handler}, {MapManager}),
     
     % The MapManager and InfoManager both need to send messages to each other.
     % Since one of them must be created first, we create the circular reference
@@ -110,7 +111,8 @@ create_player(Socket, TagAllocator, MapManager, InfoManager) ->
         {player_info_manager, handler}, {PlayerInfo, PlayerController}),
     
     % Tell the info manager and map manager someone's joined the server.
-    InfoManager ! {self(), new_actor, {PlayerInfoManager, Tag}},
+    inter_process:send_notification(
+        InfoManager, new_actor, {PlayerInfoManager, Tag}),
     inter_process:send_notification(
         MapManager, new_actor, {Position, PlayerInfoManager}),
     

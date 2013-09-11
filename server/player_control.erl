@@ -31,7 +31,9 @@ control_player(Socket, Tag, InfoManager) ->
     spawn(?MODULE, listen_to_client, [Socket, self()]),
     
     % As soon as we're created, look around and see what we can see.
-    InfoManager ! {self(), request_map_all, {Tag}},
+    % FIXME: The info manager (or some such) should probably be responsible for
+    % initially sending the map information to the new player.
+    inter_process:send_notification(InfoManager, get_map_all, {self(), Tag}),
     
     control_player_helper(Socket, Tag, InfoManager).
 
@@ -50,8 +52,8 @@ control_player_helper(Socket, Tag, InfoManager) ->
                 {action, {RequestType, RequestArguments}} ->
                     % Pass the information on to the InfoManager, which will
                     % actually execute the command.
-                    InfoManager ! {self(), action, {Tag, RequestType,
-                                      RequestArguments}},
+                    inter_process:send_notification(InfoManager, action,
+                        {Tag, RequestType, RequestArguments}),
                     control_player_helper(Socket, Tag, InfoManager)
             ;
                 % Unable to decode the request.
@@ -85,7 +87,7 @@ control_player_helper(Socket, Tag, InfoManager) ->
         % server, then end this process.
         {_Sender, cleanup, {}} ->
             % The InfoManager currently takes care of all cleanup.
-            InfoManager ! {self(), remove_actor, {Tag}},
+            inter_process:send_notification(InfoManager, remove_actor, {Tag}),
             ok
     end.
 
