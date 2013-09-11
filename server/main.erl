@@ -42,8 +42,8 @@ wait_for_connections() ->
     % PIDs we'll need to pass around -- much more than what we've got now and
     % we'll need a better solution than just having every function take all the
     % PIDs as arguments.
-    TagAllocator = spawn(inter_process, main_loop,
-                         [{tag_allocator, handler}, {}]),
+    TagAllocator = inter_process:spawn_with_handler(
+        {tag_allocator, handler}, {}),
     MapManager = spawn(map, manage_map, [{12, 16}]),
     InfoManager = spawn(info_manager, manage_information, [MapManager]),
     
@@ -105,9 +105,8 @@ create_player(Socket, TagAllocator, MapManager, InfoManager) ->
     % store its information.
     PlayerController = spawn(player_control, control_player,
                            [Socket, Tag, InfoManager]),
-    PlayerInfoManager = spawn(inter_process, main_loop,
-                            [{player_info_manager, handler},
-                             {PlayerInfo, PlayerController}]),
+    PlayerInfoManager = inter_process:spawn_with_handler(
+        {player_info_manager, handler}, {PlayerInfo, PlayerController}),
     
     % Tell the info manager and map manager someone's joined the server.
     InfoManager ! {self(), new_actor, {PlayerInfoManager, Tag}},

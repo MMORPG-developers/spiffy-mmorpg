@@ -1,9 +1,13 @@
+% FIXME: Maybe rename this module to something more like just 'process'?
 -module(inter_process).
 
 % FIXME: Consistency
 -export([
+% For external use
+    spawn_with_handler/2,
     send_notification/3,
     make_request/3,
+% For spawning
     main_loop/2
 ]).
 
@@ -88,6 +92,14 @@ main_loop(Handler = {Module, Function}, Data) ->
     end.
 
 
+% Spawns a process using the given Handler and Data.
+% Handler and Data should be exactly as they would be for main_loop/2
+% (see comment on that function); this is just a wrapper around calling
+% spawn on main_loop.
+spawn_with_handler(Handler, Data) ->
+    spawn(?MODULE, main_loop, [Handler, Data]).
+
+
 % Sends the given notification to the process with the specified Pid.
 send_notification(Pid, MessageCommand, MessageArguments) ->
     Pid ! {notification, MessageCommand, MessageArguments}.
@@ -111,6 +123,12 @@ make_request(Pid, MessageCommand, MessageArguments) ->
             % If no response comes, time out after a while.
             {error, timeout}
     end.
+
+
+
+% Private/helper functions
+
+
 
 % Send the given Response back to the Sender of a request.
 % MessageCommand and MessageArguments are the details of the request (see
