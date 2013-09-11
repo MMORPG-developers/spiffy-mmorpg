@@ -1,10 +1,7 @@
 -module(main).
 
 -export([
-% For calling
     start/0
-% For spawning
-    % wait_for_connections/0
 ]).
 
 -define(PORT, 6667).

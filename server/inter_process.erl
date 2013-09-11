@@ -1,15 +1,12 @@
 % FIXME: Maybe rename this module to something more like just 'process'?
 -module(inter_process).
 
-% FIXME: Consistency
 -export([
-% For external use
     spawn_with_handler/2,
+    main_loop/2,
     send_notification/3,
     make_request/3,
-    notify_all/3,
-% For spawning
-    main_loop/2
+    notify_all/3
 ]).
 
 % Amount of time after which to give up on waiting for a request, in
