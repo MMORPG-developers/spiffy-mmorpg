@@ -105,8 +105,8 @@ create_player(Socket, TagAllocator, MapManager, InfoManager) ->
     
     % Spawn two processes for the player: one to control it and the other to
     % store its information.
-    PlayerController = spawn(player_control, control_player,
-                           [Socket, Tag, InfoManager]),
+    PlayerController = inter_process:spawn_with_handler(
+        {player_control, handler}, {Socket, Tag, InfoManager}),
     PlayerInfoManager = inter_process:spawn_with_handler(
         {player_info_manager, handler}, {PlayerInfo, PlayerController}),
     

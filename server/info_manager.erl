@@ -148,7 +148,8 @@ handler(Data = {_MapManager, _TagDict}, notification, actor_moved,
     % Tell the actor it moved.
     {ok, ActorController} = inter_process:make_request(
         ActorInfo, get_controller, {}),
-    ActorController ! {self(), move_in_map, DeltaPosition},
+    inter_process:send_notification(
+        ActorController, move_in_map, {DeltaPosition}),
     
     {handler_continue, Data};
 
@@ -285,7 +286,8 @@ send_map_cell_info_to(Recipient, CellPosition, MapManager, Origin) ->
     % send the whole thing for now.
     {ok, MapCell} = inter_process:make_request(
         MapManager, get_cell, {CellPosition}),
-    Recipient ! {self(), update_map_cell, {RelativePosition, MapCell}}.
+    inter_process:send_notification(
+        Recipient, update_map_cell, {RelativePosition, MapCell}).
 
 
 % send_updated_cell_info_to_all(Actors, Position, OldCell, NewCell)
@@ -321,8 +323,8 @@ send_updated_cell_info_to(Actor, Position, OldCell, NewCell) ->
             RelativeColumn = CellColumn - OriginColumn,
             RelativePosition = {RelativeRow, RelativeColumn},
             
-            ActorController ! {self(), update_map_cell,
-                               {RelativePosition, NewCell}},
+            inter_process:send_notification(
+                ActorController, update_map_cell, {RelativePosition, NewCell}),
             
             ok
     ;
