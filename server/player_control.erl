@@ -22,22 +22,19 @@
 % (see inter_process:main_loop/2).
 % The resulting process controls the player with the given Tag.
 % 
-% The Data tuple given to this process when it's spawned should contain
-% three values: {Socket, Tag, InfoManager}.
+% The initial arguments to this process should be three values:
+% {Socket, Tag, InfoManager}.
 % Socket is the socket by which it can communicate with the client.
 % Tag is the tag of this player.
 % InfoManager is the process that handles information distribution.
 % 
+% For subsequent iterations, the Data tuple will contain those same three
+% values.
+% 
 % May make blocking requests of the info manager.
 
-% Just spawned; set up default values and call the appropriate version of the
-% handler. Because the length of the Data tuple is the same for the initial
-% call and subsequent calls, we add a marker atom that identifies subsequent
-% calls as such (so we don't do the initialization twice).
-% FIXME: Have main_loop pass an init atom or some such so handlers can
-% initialize themselves. The current solution is kind of stupid.
-handler({Socket, Tag, InfoManager},
-        MessageType, MessageCommand, MessageArguments) ->
+% Just spawned.
+handler({}, setup, _, Arguments = {Socket, Tag, InfoManager}) ->
     % Create a separate process to sit around listening on the socket.
     spawn(?MODULE, listen_to_client, [Socket, self()]),
     
@@ -46,13 +43,12 @@ handler({Socket, Tag, InfoManager},
     % initially sending the map information to the new player.
     inter_process:send_notification(InfoManager, get_map_all, {self(), Tag}),
     
-    handler({not_first, Socket, Tag, InfoManager},
-            MessageType, MessageCommand, MessageArguments);
+    {handler_continue, Arguments};
 
 % Some sort of command came through the client socket.
 % Decode it and handle it.
 % Data is the packet from the client, as a binary.
-handler(Data = {not_first, _Socket, Tag, InfoManager}, notification,
+handler(Data = {_Socket, Tag, InfoManager}, notification,
                                                             packet_from_client,
         {Packet}) ->
     % Decode it.
@@ -78,7 +74,7 @@ handler(Data = {not_first, _Socket, Tag, InfoManager}, notification,
     {handler_continue, Data};
 
 % Let the player know s/he's moved (within a single map).
-handler(Data = {not_first, Socket, _Tag, _InfoManager}, notification,
+handler(Data = {Socket, _Tag, _InfoManager}, notification,
                                                                    move_in_map,
         {Delta}) ->
     % Encode the information and send it through the socket.
@@ -88,7 +84,7 @@ handler(Data = {not_first, Socket, _Tag, _InfoManager}, notification,
     {handler_continue, Data};
 
 % Let the player know about new information regarding some cell of the map.
-handler(Data = {not_first, Socket, _Tag, _InfoManager}, notification,
+handler(Data = {Socket, _Tag, _InfoManager}, notification,
                                                                update_map_cell,
         {RelativePosition, CellInfo}) ->
     % Encode the information and send it through the socket.
@@ -103,7 +99,7 @@ handler(Data = {not_first, Socket, _Tag, _InfoManager}, notification,
 
 % Inform the relevant other processes that we're disconnecting from the
 % server, then end this process.
-handler(Data = {not_first, _Socket, Tag, InfoManager}, notification, cleanup,
+handler(Data = {_Socket, Tag, InfoManager}, notification, cleanup,
         {}) ->
     % The InfoManager currently takes care of all cleanup.
     inter_process:send_notification(InfoManager, remove_actor, {Tag}),

@@ -11,13 +11,19 @@
 % The resulting process is in charge of storing the information about a
 % particular player.
 % 
-% The Data tuple given to this process when it's spawned should contain
-% two values: {PlayerInfo, PlayerController}.
+% The initial arguments to this process should be two values:
+% {PlayerInfo, PlayerController}.
 % PlayerInfo is the player_info record containing the information about this
 % player.
 % PlayerController is the PID of the process controlling the player.
 % 
+% For subsequent iterations, the Data tuple will contain those same two values.
+% 
 % Makes blocking requests of no one.
+
+% Just spawned.
+handler({}, setup, _, {PlayerInfo, PlayerController}) ->
+    {handler_continue, {PlayerInfo, PlayerController}};
 
 % Someone's requested the PID of the controlling process.
 handler(Data = {_PlayerInfo, PlayerController},

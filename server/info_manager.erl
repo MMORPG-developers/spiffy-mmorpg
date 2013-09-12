@@ -18,8 +18,12 @@
 % Currently, it's also responsible for executing actions (and checking whether
 % they're valid).
 % 
-% The Data tuple given to this process when it's spawned should contain
-% one value, MapManager, which should be the PID of the map-managing process.
+% The initial arguments to this process should be one value:
+% MapManager, the PID of the map-managing process.
+% 
+% For subsequent iterations, the Data tuple will contain two values:
+% the PID of the map-managing process and a dictionary mapping tags to
+% actor info PIDs.
 % 
 % Note: a lot of messages this process accepts take for granted that the sender
 % is using the correct tag. Since that tag will *always* originate on the
@@ -31,18 +35,12 @@
 % 
 % Makes blocking requests of the map manager and various actor info processes.
 
-% Just spawned; set up default values and call the appropriate version of the
-% handler. Because the length of the Data tuple differs between the initial
-% call and subsequent calls, we don't need anything special to distinguish the
-% two.
-handler({MapManager}, MessageType, MessageCommand, MessageArguments) ->
+% Just spawned.
+handler({}, setup, _, {MapManager}) ->
     % Initialize the tag dictionary.
     TagDict = dict:new(),
     
-    % For subsequent calls to handler, the Data tuple contains two values:
-    % the map manager and the tag dictionary.
-    handler({MapManager, TagDict}, MessageType, MessageCommand,
-            MessageArguments);
+    {handler_continue, {MapManager, TagDict}};
 
 % Put a new (Tag, ActorInfo) pair into the dictionary.
 % ActorInfo should be the PID of the process storing the actor's

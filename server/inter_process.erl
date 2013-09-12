@@ -29,7 +29,7 @@
 %   * Data --
 %       The Data object from above.
 %   * MessageType --
-%       An atom, either 'request' or 'notification'.
+%       An atom, either 'request', 'notification', or 'setup'.
 %   * MessageCommand --
 %       An atom indicating the command in the message.
 %   * MessageArguments --
@@ -45,7 +45,30 @@
 % passed to the next iteration of the loop. Response (if applicable) should be
 % the Erlang object to be sent back to the requester. It should be a 2-tuple,
 % either {ok, Response} or {error, Reason}.
-main_loop(Handler = {Module, Function}, Data) ->
+% 
+% Before the main loop begins, the handler will be called once to set up the
+% Data tuple. In this call, MessageType will be the atom 'setup',
+% MessageArguments will be a tuple of initial arguments passed by whoever
+% spawned this process, Data will be an empty tuple, and MessageCommand will
+% be arbitrary. Thus every handler should have a clause that matches
+%     handler({}, setup, _, InitialArguments).
+% In this case, the return format is {Status, Data}, as with a notification.
+% It is permitted to return handler_end as Status; this will cause the process
+% to terminate without ever handling a message.
+main_loop(Handler = {Module, Function}, InitialArguments) ->
+    {Status, Data} = apply(Module, Function,
+        [{}, setup, setup, InitialArguments]),
+    case Status of
+        handler_continue ->
+            % Enter main loop.
+            main_loop_helper(Handler, Data)
+    ;
+        handler_end ->
+            % End this process before it even gets started.
+            ok
+    end.
+
+main_loop_helper(Handler = {Module, Function}, Data) ->
     % Get the next message.
     receive
         {request, Sender, MessageCommand, MessageArguments} ->
@@ -82,7 +105,7 @@ main_loop(Handler = {Module, Function}, Data) ->
     case Status of
         handler_continue ->
             % Keep going.
-            main_loop(Handler, NewData)
+            main_loop_helper(Handler, NewData)
     ;
         handler_end ->
             % End this process.
@@ -91,11 +114,11 @@ main_loop(Handler = {Module, Function}, Data) ->
 
 
 % Spawns a process using the given Handler and Data.
-% Handler and Data should be exactly as they would be for main_loop/2
-% (see comment on that function); this is just a wrapper around calling
-% spawn on main_loop.
-spawn_with_handler(Handler, Data) ->
-    spawn(?MODULE, main_loop, [Handler, Data]).
+% Handler and InitialArguments should be exactly as they would be for
+% main_loop/2 (see comment on that function); this is just a wrapper around
+% calling spawn on main_loop.
+spawn_with_handler(Handler, InitialArguments) ->
+    spawn(?MODULE, main_loop, [Handler, InitialArguments]).
 
 
 % Sends the given notification to the process with the specified Pid.

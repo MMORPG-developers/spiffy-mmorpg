@@ -8,8 +8,10 @@
 % (see inter_process:main_loop/2).
 % The resulting process is in charge of allocating and deallocating tags.
 % 
-% The Data tuple given to this process when it's spawned should be an empty
-% tuple.
+% The initial arguments to this process should be an empty tuple.
+% 
+% For subsequent iterations, the Data tuple will contain a single value:
+% the number of the most-recently-allocated tag.
 % 
 % Having a single tag-managing thread will probably be too much of a bottleneck
 % for a distributed server. However, once we reach such a large scale, we
@@ -24,10 +26,9 @@
 % 
 % Makes blocking requests of no one.
 
-% Just spawned; set up default values and call the appropriate version of the
-% handler (yay, pattern matching!).
-handler({}, MessageType, MessageCommand, MessageArguments) ->
-    handler({10}, MessageType, MessageCommand, MessageArguments);
+% Just spawned.
+handler({}, setup, _, {}) ->
+    {handler_continue, {10}};
 
 % Someone wants a new tag.
 handler({Previous}, request, new_tag, {}) ->
