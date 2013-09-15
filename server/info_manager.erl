@@ -64,9 +64,11 @@ handler({MapManager, TagAssignments}, notification, remove_actor,
     inter_process:notify(
         TagAssignments, unassign_tag, {Tag}),
     
-    % XXX: We should probably also notify the tag allocator to free
+    % FIXME: We should probably also notify the tag allocator to free
     % up the tag. But we don't have the PID of the tag allocator. That
     % was poor planning....
+    % FIXME: Before we fix that, we need to get this functionality into
+    % the correct process. Er... which process is that, anyway?
     
     % Remove them from the map as well.
     inter_process:notify(
@@ -121,12 +123,7 @@ handler(Data = {_MapManager, TagAssignments}, notification, update_map_cell,
 handler(Data = {_MapManager, _TagDict}, notification, actor_moved,
         {ActorInfo, OldPosition, NewPosition}) ->
     % Calculate the change in position.
-    % XXX: Write a library for coordinate math.
-    {OldRow, OldColumn} = OldPosition,
-    {NewRow, NewColumn} = NewPosition,
-    DeltaRows = NewRow - OldRow,
-    DeltaColumns = NewColumn - OldColumn,
-    DeltaPosition = {DeltaRows, DeltaColumns},
+    DeltaPosition = coord:subtract(NewPosition, OldPosition),
     
     % Tell the actor it moved.
     {ok, ActorController} = inter_process:make_request(
