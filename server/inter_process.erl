@@ -74,12 +74,12 @@ main_loop(Handler = {Module, Function}, InitialArguments) ->
 main_loop_helper(Handler = {Module, Function}, Data) ->
     % Get the next message.
     receive
-        {request, Sender, MessageCommand, MessageArguments} ->
+        {request, Sender, RequestId, MessageCommand, MessageArguments} ->
             % Handle a request.
             {Status, NewData, Response} = apply(Module, Function,
                 [Data, request, MessageCommand, MessageArguments]),
             % Send the response back to the requester.
-            send_response(Sender, Response, MessageCommand, MessageArguments)
+            send_response(Sender, Response, RequestId)
     ;
         {notification, MessageCommand, MessageArguments} ->
             % Handle a notification.
@@ -89,7 +89,7 @@ main_loop_helper(Handler = {Module, Function}, Data) ->
         % FIXME: I'd rather avoid encoding the syntax for responses in three
         % places. Ideally it should only show up where it's sent (above) and
         % received (in make_request).
-        {response, _MessageCommand, _RequestedData} ->
+        {response, _MessageId, _RequestedData} ->
             % Because we time out when it takes too long to receive a response
             % to a request, receiving unexpected responses is not an error.
             % Instead, simply ignore it and go on with life.
@@ -145,10 +145,13 @@ notify_all([Pid|OtherProcesses], MessageCommand, MessageArguments) ->
 % Returns either {ok, Response} where Response is the response to that request,
 % or {error, Reason} if something went wrong.
 make_request(Pid, MessageCommand, MessageArguments) ->
+    % Get an identifier so we can match the response to the request.
+    RequestId = get_request_identifier(),
+    
     % Send the request.
-    Pid ! {request, self(), MessageCommand, MessageArguments},
+    Pid ! {request, self(), RequestId, MessageCommand, MessageArguments},
     receive
-        {response, MessageCommand, RequestedData} ->
+        {response, RequestId, RequestedData} ->
             % Pass the response on to the caller.
             RequestedData
     after
@@ -164,17 +167,14 @@ make_request(Pid, MessageCommand, MessageArguments) ->
 
 
 % Send the given Response back to the Sender of a request.
-% MessageCommand and MessageArguments are the details of the request (see
-% make_request).
-% 
-% FIXME: Even if we include the entirety of the request in the response,
-% there's still a danger that we'll get the wrong response: if a request times
-% out and we send the same request, we might see the response to the first
-% request and think it's the response to the second request.
-% To fix this, add some sort of magic unique identifier to each request.
-% For instance, some hash of the current time?
-% In theory we could do consecutive integers, but how are we going to keep
-% count?
-send_response(Sender, Response, MessageCommand, _MessageArguments) ->
-    Sender ! {response, MessageCommand, Response}.
+% MessageId is the magic identifier sent with the original message, as computed
+% by get_request_identifier/0.
+send_response(Sender, Response, MessageId) ->
+    Sender ! {response, MessageId, Response}.
+
+% Return a unique identifier to be used with the next request so that its
+% response can be uniquely matched to it.
+get_request_identifier() ->
+    {_Megaseconds, Seconds, Microseconds} = now(),
+    Seconds bxor Microseconds.
 
