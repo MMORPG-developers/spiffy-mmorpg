@@ -22,11 +22,12 @@
 % (see inter_process:main_loop/2).
 % The resulting process controls the player with the given Tag.
 % 
-% The initial arguments to this process should be three values:
-% {Socket, Tag, InfoManager}.
+% The initial arguments to this process should be four values:
+% {Socket, Tag, InfoManager, CommandExecutor}.
 % Socket is the socket by which it can communicate with the client.
 % Tag is the tag of this player.
 % InfoManager is the process that handles information distribution.
+% CommandExecutor is the process that executes commands.
 % 
 % For subsequent iterations, the Data tuple will contain those same three
 % values.
@@ -34,7 +35,8 @@
 % May make blocking requests of the info manager.
 
 % Just spawned.
-handler({}, setup, _, Arguments = {Socket, Tag, InfoManager}) ->
+handler({}, setup, _,
+        Arguments = {Socket, Tag, InfoManager, _CommandExecutor}) ->
     % Create a separate process to sit around listening on the socket.
     spawn(?MODULE, listen_to_client, [Socket, self()]),
     
@@ -48,7 +50,11 @@ handler({}, setup, _, Arguments = {Socket, Tag, InfoManager}) ->
 % Some sort of command came through the client socket.
 % Decode it and handle it.
 % Data is the packet from the client, as a binary.
-handler(Data = {_Socket, Tag, InfoManager}, notification,
+% XXX: Instead of having all the code in handler/4, use a case and then have
+% separate functions that handle the various branches. That way we don't have
+% to do stupid things with the indentation to make the message command be far
+% over to the right in cases like this.
+handler(Data = {_Socket, Tag, _InfoManager, CommandExecutor}, notification,
                                                             packet_from_client,
         {Packet}) ->
     % Decode it.
@@ -60,7 +66,7 @@ handler(Data = {_Socket, Tag, InfoManager}, notification,
         {action, {RequestType, RequestArguments}} ->
             % Pass the information on to the InfoManager, which will
             % actually execute the command.
-            inter_process:send_notification(InfoManager, action,
+            inter_process:send_notification(CommandExecutor, action,
                 {Tag, RequestType, RequestArguments})
     ;
         % Unable to decode the request.
@@ -74,7 +80,7 @@ handler(Data = {_Socket, Tag, InfoManager}, notification,
     {handler_continue, Data};
 
 % Let the player know s/he's moved (within a single map).
-handler(Data = {Socket, _Tag, _InfoManager}, notification,
+handler(Data = {Socket, _Tag, _InfoManager, _CommandExecutor}, notification,
                                                                    move_in_map,
         {Delta}) ->
     % Encode the information and send it through the socket.
@@ -84,7 +90,7 @@ handler(Data = {Socket, _Tag, _InfoManager}, notification,
     {handler_continue, Data};
 
 % Let the player know about new information regarding some cell of the map.
-handler(Data = {Socket, _Tag, _InfoManager}, notification,
+handler(Data = {Socket, _Tag, _InfoManager, _CommandExecutor}, notification,
                                                                update_map_cell,
         {RelativePosition, CellInfo}) ->
     % Encode the information and send it through the socket.
@@ -99,7 +105,8 @@ handler(Data = {Socket, _Tag, _InfoManager}, notification,
 
 % Inform the relevant other processes that we're disconnecting from the
 % server, then end this process.
-handler(Data = {_Socket, Tag, InfoManager}, notification, cleanup,
+handler(Data = {_Socket, Tag, InfoManager, _CommandExecutor}, notification,
+                                                                       cleanup,
         {}) ->
     % The InfoManager currently takes care of all cleanup.
     inter_process:send_notification(InfoManager, remove_actor, {Tag}),

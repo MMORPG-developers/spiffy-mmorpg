@@ -34,11 +34,11 @@ start() ->
 % Calls create_player, which makes blocking requests of the tag manager.
 wait_for_connections() ->
     % Spawn all the infrastructure we need.
-    % FIXME: There should probably be a separate function that initializes all
-    % this. But I'm putting that off until we have a sense of just how many
-    % PIDs we'll need to pass around -- much more than what we've got now and
-    % we'll need a better solution than just having every function take all the
-    % PIDs as arguments.
+    % FIXME: This process farm is getting out of hand. There should probably be
+    % a separate function that initializes all this. But I'm putting that off
+    % until we have a sense of just how many PIDs we'll need to pass around --
+    % much more than what we've got now and we'll need a better solution than
+    % just having every function take all the PIDs as arguments.
     TagAllocator = inter_process:spawn_with_handler(
         {tag_allocator, handler}, {}),
     TagAssignments = inter_process:spawn_with_handler(
@@ -47,6 +47,8 @@ wait_for_connections() ->
         {map_manager, handler}, {{12, 16}}),
     InfoManager = inter_process:spawn_with_handler(
         {info_manager, handler}, {MapManager, TagAssignments}),
+    CommandExecutor = inter_process:spawn_with_handler(
+        {command_executor, handler}, {MapManager, TagAssignments}),
     
     % The MapManager and InfoManager both need to send messages to each other.
     % Since one of them must be created first, we create the circular reference
@@ -64,30 +66,33 @@ wait_for_connections() ->
         gen_tcp:listen(?PORT, [binary, {packet, 0}, {active, false}]),
     
     wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
-                                InfoManager).
+                                InfoManager, CommandExecutor).
 
 wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
-                            InfoManager) ->
+                            InfoManager, CommandExecutor) ->
     % Accept a new connection.
     {ok, Socket} = gen_tcp:accept(ListeningSocket),
     
     % Create a new player for the connection.
-    create_player(Socket, TagAllocator, MapManager, InfoManager),
+    create_player(Socket, TagAllocator, MapManager, InfoManager,
+        CommandExecutor),
     
     % Wait for more connections.
     wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
-                                InfoManager).
+                                InfoManager, CommandExecutor).
 
 
 
-% create_player(Socket, TagAllocator, MapManager, InfoManager).
+% create_player(Socket, TagAllocator, MapManager, InfoManager,
+%               CommandExecutor).
 % Does all the necessary setup for a new player.
 % TagAllocator is the PID of the process that allocates tags.
 % MapManager is the PID of the process that manages the map.
 % InfoManager is the PID of the process that manages information distribution.
 % 
 % Makes blocking requests of the tag manager.
-create_player(Socket, TagAllocator, MapManager, InfoManager) ->
+create_player(Socket, TagAllocator, MapManager, InfoManager,
+              CommandExecutor) ->
     % Get a tag for the new player.
     {ok, Tag} = inter_process:make_request(TagAllocator, new_tag, {}),
     
@@ -105,7 +110,8 @@ create_player(Socket, TagAllocator, MapManager, InfoManager) ->
     % Spawn two processes for the player: one to control it and the other to
     % store its information.
     PlayerController = inter_process:spawn_with_handler(
-        {player_control, handler}, {Socket, Tag, InfoManager}),
+        {player_control, handler},
+        {Socket, Tag, InfoManager, CommandExecutor}),
     PlayerInfoManager = inter_process:spawn_with_handler(
         {player_info_manager, handler}, {PlayerInfo, PlayerController}),
     
