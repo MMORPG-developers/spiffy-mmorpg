@@ -18,8 +18,6 @@
 % PlayerController is the PID of the process controlling the player.
 % 
 % For subsequent iterations, the Data tuple will contain those same two values.
-% 
-% Makes blocking requests of no one.
 
 % Just spawned.
 handler({}, setup, _, {PlayerInfo, PlayerController}) ->

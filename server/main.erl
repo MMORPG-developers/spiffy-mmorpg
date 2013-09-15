@@ -30,8 +30,6 @@ start() ->
 
 % wait_for_connections()
 % Sits around in a loop, accepting new connections.
-% 
-% Calls create_player, which makes blocking requests of the tag manager.
 wait_for_connections() ->
     % Spawn all the infrastructure we need.
     % FIXME: This process farm is getting out of hand. There should probably be
@@ -89,8 +87,6 @@ wait_for_connections_helper(ListeningSocket, TagAllocator, MapManager,
 % TagAllocator is the PID of the process that allocates tags.
 % MapManager is the PID of the process that manages the map.
 % InfoManager is the PID of the process that manages information distribution.
-% 
-% Makes blocking requests of the tag manager.
 create_player(Socket, TagAllocator, MapManager, InfoManager,
               CommandExecutor) ->
     % Get a tag for the new player.

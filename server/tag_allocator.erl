@@ -23,8 +23,6 @@
 % Because not everything with a tag will have a PID (for example, items have
 % tags but not PIDs), we'll eventually have to come up with a way of avoiding
 % running out of tags.
-% 
-% Makes blocking requests of no one.
 
 % Just spawned.
 handler({}, setup, _, {}) ->

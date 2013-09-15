@@ -120,8 +120,6 @@ handler(Data = {_Socket, Tag, InfoManager, _CommandExecutor}, notification,
 % This function should be spawned as a process.
 % The resulting process listens to Socket, forwarding all incoming data to
 % PlayerController.
-% 
-% Makes blocking requests of no one.
 listen_to_client(Socket, PlayerController) ->
     % Get messages from the player as long as the connection is open,
     % then close the socket from our end.

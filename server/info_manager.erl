@@ -31,8 +31,6 @@
 % fine.
 % 
 % FIXME: I'm not sure I'm really comfortable with that....
-% 
-% Makes blocking requests of the map manager and various actor info processes.
 
 % Just spawned.
 handler({}, setup, _, {MapManager, TagAssignments}) ->

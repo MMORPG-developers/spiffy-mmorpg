@@ -18,12 +18,6 @@
 % TagAssignments, the PID of the tag assignment managing process.
 % 
 % For subsequent iterations, the Data tuple will contain those same two values.
-% 
-% XXX: Remove these because it's now easy to grep through the code for those.
-% Er... except for weird cases like where the info manager delegates that task
-% to helper functions. But it's still easier than before.
-% 
-% Makes blocking requests of some things. Maybe.
 
 % Just spawned.
 handler({}, setup, _, {MapManager, TagAssignments}) ->

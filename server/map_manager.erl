@@ -18,8 +18,6 @@
 % For subsequent iterations, the Data tuple will contain two values:
 % the actual map array and a list of processes to be notified when the map
 % changes.
-% 
-% Makes blocking requests of various actor info processes.
 
 % Just spawned.
 handler({}, setup, _, {Size}) ->
