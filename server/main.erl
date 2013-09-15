@@ -57,7 +57,7 @@ wait_for_connections() ->
     % safe from deadlock, but creating circular references like this seems like
     % questionably good design practice. That said, I don't see a better way of
     % doing this.
-    inter_process:send_notification(MapManager, subscribe, {InfoManager}),
+    inter_process:notify(MapManager, subscribe, {InfoManager}),
     
     % Create a socket to listen for connections.
     {ok, ListeningSocket} =
@@ -112,9 +112,9 @@ create_player(Socket, TagAllocator, MapManager, InfoManager,
         {player_info_manager, handler}, {PlayerInfo, PlayerController}),
     
     % Tell the info manager and map manager someone's joined the server.
-    inter_process:send_notification(
+    inter_process:notify(
         InfoManager, new_actor, {PlayerInfoManager, Tag}),
-    inter_process:send_notification(
+    inter_process:notify(
         MapManager, new_actor, {Position, PlayerInfoManager}),
     
     ok.

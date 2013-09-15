@@ -125,7 +125,7 @@ handler({Map, NotifiedProcesses}, notification, move_actor,
     % FIXME: Don't obscure the fact that that third argument is a
     % tuple. Actually, scratch that. Make the ActorInfo take a single argument
     % that's a tuple instead of 2 separate arguments.
-    inter_process:send_notification(ActorInfo,
+    inter_process:notify(ActorInfo,
         move_in_map, NewPosition),
     
     % Get copies of the map_cell records for the start and end cells

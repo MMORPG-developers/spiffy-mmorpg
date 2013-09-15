@@ -43,7 +43,7 @@ handler({}, setup, _,
     % As soon as we're created, look around and see what we can see.
     % FIXME: The info manager (or some such) should probably be responsible for
     % initially sending the map information to the new player.
-    inter_process:send_notification(InfoManager, get_map_all, {self(), Tag}),
+    inter_process:notify(InfoManager, get_map_all, {self(), Tag}),
     
     {handler_continue, Arguments};
 
@@ -66,7 +66,7 @@ handler(Data = {_Socket, Tag, _InfoManager, CommandExecutor}, notification,
         {action, {RequestType, RequestArguments}} ->
             % Pass the information on to the InfoManager, which will
             % actually execute the command.
-            inter_process:send_notification(CommandExecutor, action,
+            inter_process:notify(CommandExecutor, action,
                 {Tag, RequestType, RequestArguments})
     ;
         % Unable to decode the request.
@@ -109,7 +109,7 @@ handler(Data = {_Socket, Tag, InfoManager, _CommandExecutor}, notification,
                                                                        cleanup,
         {}) ->
     % The InfoManager currently takes care of all cleanup.
-    inter_process:send_notification(InfoManager, remove_actor, {Tag}),
+    inter_process:notify(InfoManager, remove_actor, {Tag}),
     
     % But we should still end this process.
     {handler_end, Data}.
@@ -127,14 +127,14 @@ listen_to_client(Socket, PlayerController) ->
     
     % Once the player disconnects, close our end of the socket and clean up our
     % character.
-    inter_process:send_notification(PlayerController, cleanup, {}),
+    inter_process:notify(PlayerController, cleanup, {}),
     gen_tcp:close(Socket).
 
 listen_to_client_helper(Socket, PlayerController) ->
     case client_connection:recv(Socket) of
         % Received data from player; forward it to controller and keep going.
         {ok, Packet} ->
-            inter_process:send_notification(
+            inter_process:notify(
                 PlayerController, packet_from_client, {Packet}),
             listen_to_client_helper(Socket, PlayerController)
     ;

@@ -60,7 +60,7 @@ handler(Data = {MapManager, TagAssignments}, notification, action,
     case DestinationCell#map_cell.blocks_passage of
         false ->
             % The actor can move into that square.
-            inter_process:send_notification(
+            inter_process:notify(
                 MapManager, move_actor, {ActorInfo, NewPosition})
     ;
         true ->

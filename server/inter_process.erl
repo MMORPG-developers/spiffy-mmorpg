@@ -4,7 +4,7 @@
 -export([
     spawn_with_handler/2,
     main_loop/2,
-    send_notification/3,
+    notify/3,
     make_request/3,
     notify_all/3
 ]).
@@ -122,7 +122,7 @@ spawn_with_handler(Handler, InitialArguments) ->
 
 
 % Sends the given notification to the process with the specified Pid.
-send_notification(Pid, MessageCommand, MessageArguments) ->
+notify(Pid, MessageCommand, MessageArguments) ->
     Pid ! {notification, MessageCommand, MessageArguments}.
 
 
@@ -131,7 +131,7 @@ send_notification(Pid, MessageCommand, MessageArguments) ->
 notify_all([], _MessageCommand, _MessageArguments) ->
     ok;
 notify_all([Pid|OtherProcesses], MessageCommand, MessageArguments) ->
-    send_notification(Pid, MessageCommand, MessageArguments),
+    notify(Pid, MessageCommand, MessageArguments),
     notify_all(OtherProcesses, MessageCommand, MessageArguments).
 
 

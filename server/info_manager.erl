@@ -42,7 +42,7 @@ handler({}, setup, _, {MapManager, TagAssignments}) ->
 % FIXME: Swap order of ActorInfo and Tag. I think.
 handler({MapManager, TagAssignments}, notification, new_actor,
         {ActorInfo, Tag}) ->
-    inter_process:send_notification(
+    inter_process:notify(
         TagAssignments, assign_tag, {Tag, ActorInfo}),
     
     {handler_continue, {MapManager, TagAssignments}};
@@ -61,7 +61,7 @@ handler({MapManager, TagAssignments}, notification, remove_actor,
         TagAssignments, lookup_tag, {Tag}),
     
     % Remove that tag from the tag dictionary.
-    inter_process:send_notification(
+    inter_process:notify(
         TagAssignments, unassign_tag, {Tag}),
     
     % XXX: We should probably also notify the tag allocator to free
@@ -69,7 +69,7 @@ handler({MapManager, TagAssignments}, notification, remove_actor,
     % was poor planning....
     
     % Remove them from the map as well.
-    inter_process:send_notification(
+    inter_process:notify(
         MapManager, remove_actor, {ActorInfo}),
     
     {handler_continue, {MapManager, TagAssignments}};
@@ -131,7 +131,7 @@ handler(Data = {_MapManager, _TagDict}, notification, actor_moved,
     % Tell the actor it moved.
     {ok, ActorController} = inter_process:make_request(
         ActorInfo, get_controller, {}),
-    inter_process:send_notification(
+    inter_process:notify(
         ActorController, move_in_map, {DeltaPosition}),
     
     {handler_continue, Data}.
@@ -198,7 +198,7 @@ send_map_cell_info_to(Recipient, CellPosition, MapManager, Origin) ->
     % send the whole thing for now.
     {ok, MapCell} = inter_process:make_request(
         MapManager, get_cell, {CellPosition}),
-    inter_process:send_notification(
+    inter_process:notify(
         Recipient, update_map_cell, {RelativePosition, MapCell}).
 
 
@@ -235,7 +235,7 @@ send_updated_cell_info_to(Actor, Position, OldCell, NewCell) ->
             RelativeColumn = CellColumn - OriginColumn,
             RelativePosition = {RelativeRow, RelativeColumn},
             
-            inter_process:send_notification(
+            inter_process:notify(
                 ActorController, update_map_cell, {RelativePosition, NewCell}),
             
             ok
