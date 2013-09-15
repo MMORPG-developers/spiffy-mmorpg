@@ -37,24 +37,22 @@
 
 % Just spawned.
 handler({}, setup, _, {MapManager}) ->
-    % Initialize the tag dictionary.
-    TagDict = dict:new(),
+    % Initialize the tag assignment manager.
+    TagAssignments = inter_process:spawn_with_handler(
+        {tag_assignment_manager, handler}, {}),
     
-    {handler_continue, {MapManager, TagDict}};
+    {handler_continue, {MapManager, TagAssignments}};
 
 % Put a new (Tag, ActorInfo) pair into the dictionary.
 % ActorInfo should be the PID of the process storing the actor's
 % information, and Tag should be the numerical tag of the new actor.
-handler({MapManager, TagDict}, notification, new_actor,
+% FIXME: Swap order of ActorInfo and Tag. I think.
+handler({MapManager, TagAssignments}, notification, new_actor,
         {ActorInfo, Tag}) ->
-    % Use a case block so that we crash if the Tag is already in use.
-    % FIXME: Crash better if the tag is already in use.
-    case dict:is_key(Tag, TagDict) of
-        false ->
-            % Map Tag to ActorInfo in the dictionary.
-            NewTagDict = dict:append(Tag, ActorInfo, TagDict),
-            {handler_continue, {MapManager, NewTagDict}}
-    end;
+    inter_process:send_notification(
+        TagAssignments, assign_tag, {Tag, ActorInfo}),
+    
+    {handler_continue, {MapManager, TagAssignments}};
 
 % Remove an actor from the game. Don't ever call this except using your own
 % tag.
@@ -62,71 +60,65 @@ handler({MapManager, TagDict}, notification, new_actor,
 % implementing some sort of assurance you own that tag... maybe there's a
 % second magic value generated with the tag that only the owner of the tag and
 % the InfoManager know?
-handler({MapManager, TagDict}, notification, remove_actor,
+handler({MapManager, TagAssignments}, notification, remove_actor,
         {Tag}) ->
-    % Use a case block so that we crash if the Tag is not in use.
-    % FIXME: Crash better if the tag is not in use.
-    case dict:is_key(Tag, TagDict) of
-        true ->
-            % Figure out who has that tag and remove them from the dictionary.
-            [ActorInfo] = dict:fetch(Tag, TagDict),
-            NewTagDict = dict:erase(Tag, TagDict),
-            
-            % Remove them from the map as well.
-            inter_process:send_notification(
-                MapManager, remove_actor, {ActorInfo}),
-            
-            % FIXME: We should probably also notify the tag allocator to free
-            % up the tag. But we don't have the PID of the tag allocator. That
-            % was poor planning....
-            
-            {handler_continue, {MapManager, NewTagDict}}
-    end;
+    % Figure out who has that tag, so we can remove them from the map.
+    % FIXME: The map manager should probably store tags, not PIDs.
+    {ok, ActorInfo} = inter_process:make_request(
+        TagAssignments, lookup_tag, {Tag}),
+    
+    % Remove that tag from the tag dictionary.
+    inter_process:send_notification(
+        TagAssignments, unassign_tag, {Tag}),
+    
+    % XXX: We should probably also notify the tag allocator to free
+    % up the tag. But we don't have the PID of the tag allocator. That
+    % was poor planning....
+    
+    % Remove them from the map as well.
+    inter_process:send_notification(
+        MapManager, remove_actor, {ActorInfo}),
+    
+    {handler_continue, {MapManager, TagAssignments}};
 
 % Send back to Sender, in separate messages (one for each cell), all
 % known information about the map.
 % ObserverTag should be the tag of the actor requesting the
 % information.
-% FIXME: Make this a request instead of a notification.
-handler(Data = {MapManager, TagDict}, notification, get_map_all,
+% XXX: Make this a request instead of a notification.
+handler(Data = {MapManager, TagAssignments}, notification, get_map_all,
         {ObserverPid, ObserverTag}) ->
-        % Look up the observer in the dictionary.
-        [ObserverInfo] = dict:fetch(ObserverTag, TagDict),
-        
-        % For now, just do a line-of-sight calculation from their position.
-        % FIXME: Do more complicated calculations. Maybe the observer is
-        % blind, for example.
-        {ok, ObserverPosition} = inter_process:make_request(
-            ObserverInfo, get_position, {}),
-        VisibleCells = get_all_visible_map_cells(MapManager,
-                                                 ObserverPosition),
-        
-        % Send them the information.
-        {ok, ObserverOrigin} = inter_process:make_request(
-            ObserverInfo, get_origin, {}),
-        send_all_map_cells_info_to(ObserverPid, VisibleCells, MapManager,
-                                   ObserverOrigin),
-        
-        {handler_continue, Data};
+    % Look up the observer.
+    {ok, ObserverInfo} = inter_process:make_request(
+        TagAssignments, lookup_tag, {ObserverTag}),
+    
+    % For now, just do a line-of-sight calculation from their position.
+    % FIXME: Do more complicated calculations. Maybe the observer is
+    % blind, for example.
+    {ok, ObserverPosition} = inter_process:make_request(
+        ObserverInfo, get_position, {}),
+    VisibleCells = get_all_visible_map_cells(MapManager,
+                                             ObserverPosition),
+    
+    % Send them the information.
+    {ok, ObserverOrigin} = inter_process:make_request(
+        ObserverInfo, get_origin, {}),
+    send_all_map_cells_info_to(ObserverPid, VisibleCells, MapManager,
+                               ObserverOrigin),
+    
+    {handler_continue, Data};
 
 % Inform the relevant actors that the cell at Position has changed.
 % OldCell and NewCell should be map_cell records indicating the state
 % of the cell before and after the change (respectively).
-handler(Data = {_MapManager, TagDict}, notification, update_map_cell,
+handler(Data = {_MapManager, TagAssignments}, notification, update_map_cell,
         {Position, OldCell, NewCell}) ->
-    % Get a list of all tags.
-    % FIXME: This really won't scale well.
-    AllTags = dict:fetch_keys(TagDict),
-    
-    % Look up all the tags in the TagDict to get a list of all actors.
-    % FIXME: There doesn't seem to be a dict:fetch_values function;
-    % should we write one and put it in one of our own libraries?
-    AllActors = lists:flatmap(fun(Tag) -> dict:fetch(Tag, TagDict) end,
-                              AllTags),
+    % Get a list of all actors in the world.
+    {ok, AllActors} = inter_process:make_request(
+        TagAssignments, get_all_actors, {}),
     
     % Send updated map cell information to the relevant actors.
-    send_updated_cell_info_to_all(AllActors, Position, OldCell,
-                                  NewCell),
+    send_updated_cell_info_to_all(AllActors, Position, OldCell, NewCell),
     
     {handler_continue, Data};
 
@@ -136,7 +128,7 @@ handler(Data = {_MapManager, TagDict}, notification, update_map_cell,
 handler(Data = {_MapManager, _TagDict}, notification, actor_moved,
         {ActorInfo, OldPosition, NewPosition}) ->
     % Calculate the change in position.
-    % FIXME: Write a library for coordinate math.
+    % XXX: Write a library for coordinate math.
     {OldRow, OldColumn} = OldPosition,
     {NewRow, NewColumn} = NewPosition,
     DeltaRows = NewRow - OldRow,
@@ -167,10 +159,11 @@ handler(Data = {_MapManager, _TagDict}, notification, actor_moved,
 % FIXME: Move this responsibility to a separate process.
 % FIXME: As there get to be more actions, divide the handler code among many
 % helper functions, and delegate some of the pattern-matching to them as well.
-handler(Data = {MapManager, TagDict}, notification, action,
+handler(Data = {MapManager, TagAssignments}, notification, action,
         {Tag, walk, {Direction}}) ->
     % Translate the Tag and Direction.
-    [ActorInfo] = dict:fetch(Tag, TagDict),
+    {ok, ActorInfo} = inter_process:make_request(
+        TagAssignments, lookup_tag, {Tag}),
     {DeltaRows, DeltaColumns} = get_movement_delta(Direction),
     
     % Calculate the destination location.

@@ -49,6 +49,22 @@ handler({TagDict}, notification, unassign_tag,
             {handler_continue, {NewTagDict}}
     end;
 
+% Send back a list of all actors that have tags mapping to them.
+% FIXME: Any code using this won't scale well.
+handler({TagDict}, request, get_all_actors,
+        {}) ->
+    % Get a list of all tags.
+    % FIXME: This really won't scale well.
+    AllTags = dict:fetch_keys(TagDict),
+    
+    % Look up all the tags in the TagDict to get a list of all actors.
+    % FIXME: There doesn't seem to be a dict:fetch_values function;
+    % should we write one and put it in one of our own libraries?
+    AllActors = lists:flatmap(fun(Tag) -> dict:fetch(Tag, TagDict) end,
+                              AllTags),
+    
+    {handler_continue, {TagDict}, {ok, AllActors}};
+
 % Look up the specified Tag, returning the actor to which it is mapped.
 handler({TagDict}, request, lookup_tag,
         {Tag}) ->
