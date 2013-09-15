@@ -1,11 +1,10 @@
 -module(player_control).
 
 -export([
-% For calling
-    % ...
+% For external use
+    handler/4,
 % For spawning
-    listen_to_client/2,
-    control_user/3
+    listen_to_client/2
 ]).
 
 % For now, when we send the client information about a map cell we send a
@@ -19,106 +18,134 @@
 -include("map_cell.hrl").
 
 
-% control_user(Socket, Tag, InfoManager)
-% This function should be spawned as a process.
+% This function should be used as the handler of a process
+% (see inter_process:main_loop/2).
 % The resulting process controls the player with the given Tag.
+% 
+% The initial arguments to this process should be four values:
+% {Socket, Tag, InfoManager, CommandExecutor}.
 % Socket is the socket by which it can communicate with the client.
+% Tag is the tag of this player.
 % InfoManager is the process that handles information distribution.
+% CommandExecutor is the process that executes commands.
+% 
+% For subsequent iterations, the Data tuple will contain those same three
+% values.
 % 
 % May make blocking requests of the info manager.
-control_user(Socket, Tag, InfoManager) ->
+
+% Just spawned.
+handler({}, setup, _,
+        Arguments = {Socket, Tag, InfoManager, _CommandExecutor}) ->
     % Create a separate process to sit around listening on the socket.
     spawn(?MODULE, listen_to_client, [Socket, self()]),
     
     % As soon as we're created, look around and see what we can see.
-    InfoManager ! {self(), request_map_all, {Tag}},
+    % FIXME: The info manager (or some such) should probably be responsible for
+    % initially sending the map information to the new player.
+    inter_process:notify(InfoManager, get_map_all, {self(), Tag}),
     
-    control_user_helper(Socket, Tag, InfoManager).
+    {handler_continue, Arguments};
 
-control_user_helper(Socket, Tag, InfoManager) ->
-    receive
-        % Some sort of command came through the client socket.
-        % Decode it and handle it.
-        % Data is the packet from the client, as a binary.
-        {_Sender, packet_from_client, {Data}} ->
-            % Decode it.
-            case decode_client_request(Data) of
-                % action indicates a request to perform an action.
-                % RequestType is an atom clarifying the particular action to
-                % perform.
-                % RequestArguments is a tuple of arguments for that action.
-                {action, {RequestType, RequestArguments}} ->
-                    % Pass the information on to the InfoManager, which will
-                    % actually execute the command.
-                    InfoManager ! {self(), action, {Tag, RequestType,
-                                      RequestArguments}},
-                    control_user_helper(Socket, Tag, InfoManager)
-            ;
-                % Unable to decode the request.
-                {error, _} ->
-                    % For now, just print out an error message.
-                    % FIXME: Tell the user their request failed or something I
-                    % guess.
-                    io:format("Error: unable to decode client request.~n", []),
-                    control_user_helper(Socket, Tag, InfoManager)
-            end
+% Some sort of command came through the client socket.
+% Decode it and handle it.
+% Data is the packet from the client, as a binary.
+% FIXME: Instead of having all the code in handler/4, use a case and then have
+% separate functions that handle the various branches. That way we don't have
+% to do stupid things with the indentation to make the message command be far
+% over to the right in cases like this.
+handler(Data = {_Socket, Tag, _InfoManager, CommandExecutor}, notification,
+                                                            packet_from_client,
+        {Packet}) ->
+    % Decode it.
+    case decode_client_request(Packet) of
+        % action indicates a request to perform an action.
+        % RequestType is an atom clarifying the particular action to
+        % perform.
+        % RequestArguments is a tuple of arguments for that action.
+        {action, {RequestType, RequestArguments}} ->
+            % Pass the information on to the InfoManager, which will
+            % actually execute the command.
+            inter_process:notify(CommandExecutor, action,
+                {Tag, RequestType, RequestArguments})
     ;
-        % Let the player know s/he's moved (within a single map).
-        {_Sender, move_in_map, Delta} ->
-            % Encode the information and send it through the socket.
-            Binary = encode_move_in_map(Delta),
-            client_connection:send(Socket, Binary),
-            control_user_helper(Socket, Tag, InfoManager)
-    ;
-        % Let the player know about new information regarding some cell of the
-        % map.
-        {_Sender, update_map_cell, {RelativePosition, CellInfo}} ->
-            % Encode the information and send it through the socket.
-            Binary = encode_update_map_cell(RelativePosition, CellInfo),
-            client_connection:send(Socket, Binary),
-            control_user_helper(Socket, Tag, InfoManager)
-    % TODO: the protocol should eventually support a new_map message as well.
-    % But in that case, we'll need to figure out whose responsibility it is to
-    % send all information about the new map.
-    ;
-        % Inform the relevant other processes that we're disconnecting from the
-        % server, then end this process.
-        {_Sender, cleanup, {}} ->
-            % The InfoManager currently takes care of all cleanup.
-            InfoManager ! {self(), remove_actor, {Tag}},
-            ok
-    end.
+        % Unable to decode the request.
+        {error, _} ->
+            % For now, just print out an error message.
+            % FIXME: Tell the player their request failed or something
+            % I guess.
+            io:format("Error: unable to decode client request.~n", [])
+    end,
+    
+    {handler_continue, Data};
+
+% Let the player know s/he's moved (within a single map).
+handler(Data = {Socket, _Tag, _InfoManager, _CommandExecutor}, notification,
+                                                                   move_in_map,
+        {Delta}) ->
+    % Encode the information and send it through the socket.
+    Binary = encode_move_in_map(Delta),
+    client_connection:send(Socket, Binary),
+    
+    {handler_continue, Data};
+
+% Let the player know about new information regarding some cell of the map.
+handler(Data = {Socket, _Tag, _InfoManager, _CommandExecutor}, notification,
+                                                               update_map_cell,
+        {RelativePosition, CellInfo}) ->
+    % Encode the information and send it through the socket.
+    Binary = encode_update_map_cell(RelativePosition, CellInfo),
+    client_connection:send(Socket, Binary),
+    
+    {handler_continue, Data};
+
+% TODO: the protocol should eventually support a new_map message as well.
+% But in that case, we'll need to figure out whose responsibility it is to
+% send all information about the new map.
+
+% Inform the relevant other processes that we're disconnecting from the
+% server, then end this process.
+handler(Data = {_Socket, Tag, InfoManager, _CommandExecutor}, notification,
+                                                                       cleanup,
+        {}) ->
+    % The InfoManager currently takes care of all cleanup.
+    inter_process:notify(InfoManager, remove_actor, {Tag}),
+    
+    % But we should still end this process.
+    {handler_end, Data}.
 
 
-% listen_to_client(Socket, UserController)
+
+% listen_to_client(Socket, PlayerController)
 % This function should be spawned as a process.
 % The resulting process listens to Socket, forwarding all incoming data to
-% UserController.
-% 
-% Makes blocking requests of no one.
-listen_to_client(Socket, UserController) ->
-    % Get messages from the user as long as the connection is open,
+% PlayerController.
+listen_to_client(Socket, PlayerController) ->
+    % Get messages from the player as long as the connection is open,
     % then close the socket from our end.
-    ok = listen_to_client_helper(Socket, UserController),
+    listen_to_client_helper(Socket, PlayerController),
     
-    % Once the user disconnects, close our end of the socket and clean up our
+    % Once the player disconnects, close our end of the socket and clean up our
     % character.
-    UserController ! {no_reply, cleanup, {}},
+    inter_process:notify(PlayerController, cleanup, {}),
     gen_tcp:close(Socket).
 
-listen_to_client_helper(Socket, UserController) ->
+listen_to_client_helper(Socket, PlayerController) ->
     case client_connection:recv(Socket) of
-        % Received data from user; forward it to controller and keep going.
-        {ok, Data} ->
-            % Deliberately spoof the sender because we know we can't accept
-            % messages anyway, so we might as well fail loudly.
-            UserController ! {no_reply, packet_from_client, {Data}},
-            listen_to_client_helper(Socket, UserController)
+        % Received data from player; forward it to controller and keep going.
+        {ok, Packet} ->
+            inter_process:notify(
+                PlayerController, packet_from_client, {Packet}),
+            listen_to_client_helper(Socket, PlayerController)
     ;
         % Connection closed.
         {error, closed} ->
             ok
     end.
+
+
+
+% Private / helper functions
 
 
 
@@ -186,14 +213,14 @@ encode_map_cell(CellInfo) ->
             end
     end.
 
-% decode_client_request(Data)
+% decode_client_request(Packet)
 % Parses a data packet from the client and turns it into a tuple representing
 % the request using atoms. If unable to parse the packet, returns {error, Type}
 % where Type is an atom indicating the type of error that occurred.
-% Data is the packet from the client, as a binary.
-decode_client_request(Data) ->
+% Packet is the packet from the client, as a binary.
+decode_client_request(Packet) ->
     % Parse it one word at a time.
-    case split_first_word(Data) of
+    case split_first_word(Packet) of
         % action -- indicates a desire to perform some action. Most commands
         % that affect the physical world fall under this category.
         {<<"action">>, Action} ->

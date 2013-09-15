@@ -1,18 +1,15 @@
 -module(info_manager).
 
 -export([
-% For calling
-    % ...
-% For spawning
-    manage_information/1
+    handler/4
 ]).
 
 -include("map_cell.hrl").
 
 
 
-% manage_information(MapManager)
-% This function should be spawned as a process.
+% This function should be used as the handler of a process
+% (see inter_process:main_loop/2).
 % The resulting process serves as the authority on who knows what -- if any
 % actor wants to know any information, they ask the information manager, who
 % tells them whatever they know. (This is so that, for example, you can't get
@@ -20,194 +17,135 @@
 % you.)
 % Currently, it's also responsible for executing actions (and checking whether
 % they're valid).
-% FIXME: The responsibility of checking and executing actions should be
-% delegated to a separate process.
 % 
-% Makes blocking requests of the map manager and various actor info processes.
+% The initial arguments to this process should be two values:
+% MapManager, the PID of the map-managing process, and
+% TagAssignments, the PID of the tag assignment managing process.
+% 
+% For subsequent iterations, the Data tuple will contain those same two values.
 % 
 % Note: a lot of messages this process accepts take for granted that the sender
 % is using the correct tag. Since that tag will *always* originate on the
 % server, we needn't worry about malicious code falsifying its tag. So as long
 % as we, as developers, never decide to lie about anyone's tag, we should be
 % fine.
-manage_information(MapManager) ->
-    manage_information_helper(MapManager, dict:new()).
+% 
+% FIXME: I'm not sure I'm really comfortable with that....
 
-manage_information_helper(MapManager, TagDict) ->
-    receive
-        % Put a new (Tag, ActorInfo) pair into the dictionary.
-        % ActorInfo should be the PID of the process storing the actor's
-        % information, and Tag should be the numerical tag of the new actor.
-        {_Sender, new_actor, {ActorInfo, Tag}} ->
-            % Use a case block so that we crash if the Tag is already in use.
-            % FIXME: Crash better if the tag is already in use.
-            case dict:is_key(Tag, TagDict) of
-                false ->
-                    % Map Tag to ActorInfo in the dictionary.
-                    NewTagDict = dict:append(Tag, ActorInfo, TagDict),
-                    manage_information_helper(MapManager, NewTagDict)
-            end
-    ;
-        % Remove an actor from the game. Don't ever call this except using your
-        % own tag.
-        % FIXME: In fact, this is an easy enough cheat I'm tempted to suggest
-        % implementing some sort of assurance you own that tag... maybe there's
-        % a second magic value generated with the tag that only the owner of
-        % the tag and the InfoManager know?
-        {_Sender, remove_actor, {Tag}} ->
-            % Use a case block so that we crash if the Tag is not in use.
-            % FIXME: Crash better if the tag is not in use.
-            case dict:is_key(Tag, TagDict) of
-                true ->
-                    % Figure out who has that tag and remove them from the
-                    % dictionary.
-                    [ActorInfo] = dict:fetch(Tag, TagDict),
-                    NewTagDict = dict:erase(Tag, TagDict),
-                    
-                    % Remove them from the map as well.
-                    MapManager ! {self(), remove_actor, {ActorInfo}},
-                    
-                    % FIXME: We should probably also notify the tag manager
-                    % that that tag is now unused. But we don't have the PID of
-                    % the tag manager. That was poor planning....
-                    
-                    manage_information_helper(MapManager, NewTagDict)
-            end
-    ;
-        % Send back to Sender, in separate messages (one for each cell), all
-        % known information about the map.
-        % ObserverTag should be the tag of the actor requesting the
-        % information.
-        {Sender, request_map_all, {ObserverTag}} ->
-            % Look up the observer in the dictionary.
-            [ObserverInfo] = dict:fetch(ObserverTag, TagDict),
-            
-            % For now, just do a line-of-sight calculation from their position.
-            % FIXME: Do more complicated calculations. Maybe the observer is
-            % blind, for example.
-            ObserverPosition = user_info_manager:get_actor_position(
-                ObserverInfo),
-            VisibleCells = get_all_visible_map_cells(MapManager,
-                                                     ObserverPosition),
-            
-            % Send them the information.
-            ObserverOrigin = user_info_manager:get_actor_origin(
-                ObserverInfo),
-            send_all_map_cells_info_to(Sender, VisibleCells, MapManager,
-                                       ObserverOrigin),
-            
-            manage_information_helper(MapManager, TagDict)
-    ;
-        % Inform the relevant actors that the cell at Position has changed.
-        % OldCell and NewCell should be map_cell records indicating the state
-        % of the cell before and after the change (respectively).
-        {_Sender, update_map_cell, {Position, OldCell, NewCell}} ->
-            % Get a list of all tags.
-            AllTags = dict:fetch_keys(TagDict),
-            
-            % Look up all the tags in the TagDict to get a list of all actors.
-            % FIXME: There doesn't seem to be a dict:fetch_values function;
-            % should we write one and put it in one of our own libraries?
-            AllActors = lists:flatmap(fun(Tag) -> dict:fetch(Tag, TagDict) end,
-                                      AllTags),
-            
-            % Send updated map cell information to the relevant actors.
-            send_updated_cell_info_to_all(AllActors, Position, OldCell,
-                                          NewCell),
-            
-            manage_information_helper(MapManager, TagDict)
-    ;
-        % Inform the relevant actor (and possibly anyone who can see it?) that
-        % they've moved.
-        % FIXME: This should be passed the Tag, not the ActorInfo.
-        {_Sender, actor_moved, {ActorInfo, OldPosition, NewPosition}} ->
-            % Calculate the change in position.
-            {OldRow, OldColumn} = OldPosition,
-            {NewRow, NewColumn} = NewPosition,
-            DeltaRows = NewRow - OldRow,
-            DeltaColumns = NewColumn - OldColumn,
-            DeltaPosition = {DeltaRows, DeltaColumns},
-            
-            % Tell the actor it moved.
-            ActorController = user_info_manager:get_actor_controller(
-                ActorInfo),
-            ActorController ! {self(), move_in_map, DeltaPosition},
-            
-            manage_information_helper(MapManager, TagDict)
-    ;
-        % Causes the specified actor to try to walk in the specified direction.
-        % A walk should always be between two adjacent map cells.
-        % Tag should be the tag of the actor walking; Direction should be an
-        % atom indicating the direction to walk (see get_movement_delta/1).
-        % 
-        % Currently, no message is sent back to indicate whether the walk
-        % succeeded.
-        % FIXME: Is this what we want? It gets somewhat harder to define what
-        % constitutes "success" for more complex actions, so it's probably best
-        % to just make the caller figure it out from whether they hear that
-        % they moved or not. But sending such a message back might make the AI
-        % much easier.
-        {_Sender, action, {Tag, walk, {Direction}}} ->
-            % Translate the Tag and Direction.
-            [ActorInfo] = dict:fetch(Tag, TagDict),
-            {DeltaRows, DeltaColumns} = get_movement_delta(Direction),
-            
-            % Calculate the destination location.
-            {OldRow, OldColumn} = user_info_manager:get_actor_position(
-                ActorInfo),
-            NewRow = OldRow + DeltaRows,
-            NewColumn = OldColumn + DeltaColumns,
-            NewPosition = {NewRow, NewColumn},
-            
-            % Check if the Actor can walk into the destination cell or not.
-            % Note that since walking is by definition between adjacent cells,
-            % we need not check if there are cells in between.
-            DestinationCell = map:get_map_cell(MapManager, NewPosition),
-            case DestinationCell#map_cell.blocks_passage of
-                false ->
-                    % The actor can move into that square.
-                    MapManager ! {self(), move_actor, {ActorInfo,
-                                  NewPosition}}
-            ;
-                true ->
-                    % The actor cannot move into that square.
-                    % In this case, simply do nothing.
-                    ok
-            end,
-            
-            manage_information_helper(MapManager, TagDict)
-    end.
+% Just spawned.
+handler({}, setup, _, {MapManager, TagAssignments}) ->
+    {handler_continue, {MapManager, TagAssignments}};
+
+% Put a new (Tag, ActorInfo) pair into the dictionary.
+% ActorInfo should be the PID of the process storing the actor's
+% information, and Tag should be the numerical tag of the new actor.
+% FIXME: Swap order of ActorInfo and Tag. I think.
+handler({MapManager, TagAssignments}, notification, new_actor,
+        {ActorInfo, Tag}) ->
+    inter_process:notify(
+        TagAssignments, assign_tag, {Tag, ActorInfo}),
+    
+    {handler_continue, {MapManager, TagAssignments}};
+
+% Remove an actor from the game. Don't ever call this except using your own
+% tag.
+% FIXME: In fact, this is an easy enough cheat I'm tempted to suggest
+% implementing some sort of assurance you own that tag... maybe there's a
+% second magic value generated with the tag that only the owner of the tag and
+% the InfoManager know?
+handler({MapManager, TagAssignments}, notification, remove_actor,
+        {Tag}) ->
+    % Figure out who has that tag, so we can remove them from the map.
+    % FIXME: The map manager should probably store tags, not PIDs.
+    {ok, ActorInfo} = inter_process:make_request(
+        TagAssignments, lookup_tag, {Tag}),
+    
+    % Remove that tag from the tag dictionary.
+    inter_process:notify(
+        TagAssignments, unassign_tag, {Tag}),
+    
+    % FIXME: We should probably also notify the tag allocator to free
+    % up the tag. But we don't have the PID of the tag allocator. That
+    % was poor planning....
+    % FIXME: Before we fix that, we need to get this functionality into
+    % the correct process. Er... which process is that, anyway?
+    
+    % Remove them from the map as well.
+    inter_process:notify(
+        MapManager, remove_actor, {ActorInfo}),
+    
+    {handler_continue, {MapManager, TagAssignments}};
+
+% Send back to Sender, in separate messages (one for each cell), all
+% known information about the map.
+% ObserverTag should be the tag of the actor requesting the
+% information.
+% FIXME: Make this a request instead of a notification.
+handler(Data = {MapManager, TagAssignments}, notification, get_map_all,
+        {ObserverPid, ObserverTag}) ->
+    % Look up the observer.
+    {ok, ObserverInfo} = inter_process:make_request(
+        TagAssignments, lookup_tag, {ObserverTag}),
+    
+    % For now, just do a line-of-sight calculation from their position.
+    % FIXME: Do more complicated calculations. Maybe the observer is
+    % blind, for example.
+    {ok, ObserverPosition} = inter_process:make_request(
+        ObserverInfo, get_position, {}),
+    VisibleCells = get_all_visible_map_cells(MapManager,
+                                             ObserverPosition),
+    
+    % Send them the information.
+    {ok, ObserverOrigin} = inter_process:make_request(
+        ObserverInfo, get_origin, {}),
+    send_all_map_cells_info_to(ObserverPid, VisibleCells, MapManager,
+                               ObserverOrigin),
+    
+    {handler_continue, Data};
+
+% Inform the relevant actors that the cell at Position has changed.
+% OldCell and NewCell should be map_cell records indicating the state
+% of the cell before and after the change (respectively).
+handler(Data = {_MapManager, TagAssignments}, notification, update_map_cell,
+        {Position, OldCell, NewCell}) ->
+    % Get a list of all actors in the world.
+    {ok, AllActors} = inter_process:make_request(
+        TagAssignments, get_all_actors, {}),
+    
+    % Send updated map cell information to the relevant actors.
+    send_updated_cell_info_to_all(AllActors, Position, OldCell, NewCell),
+    
+    {handler_continue, Data};
+
+% Inform the relevant actor (and possibly anyone who can see it?) that they've
+% moved.
+% FIXME: This should be passed the Tag, not the ActorInfo.
+handler(Data = {_MapManager, _TagDict}, notification, actor_moved,
+        {ActorInfo, OldPosition, NewPosition}) ->
+    % Calculate the change in position.
+    DeltaPosition = coord:subtract(NewPosition, OldPosition),
+    
+    % Tell the actor it moved.
+    {ok, ActorController} = inter_process:make_request(
+        ActorInfo, get_controller, {}),
+    inter_process:notify(
+        ActorController, move_in_map, {DeltaPosition}),
+    
+    {handler_continue, Data}.
+
+
+
+% Private/helper Functions
 
 
 
 % get_seen_map_cell(ActorInfo, MapCell)
 % Return the given MapCell (a map_cell record), as seen by the given actor.
 % ActorInfo is the PID of the actor's info-managing process.
+% FIXME: Won't this function eventually need to take the MapManager as an
+% argument? For, like, line-of-sight reasons and such?
 get_seen_map_cell(_ActorInfo, MapCell) ->
     MapCell.
-
-% get_movement_delta(Direction)
-% Returns the displacement induced by moving once in the specified Direction.
-% Direction should be an atom, one of:
-%     north, east, south, west, northeast, southeast, southwest, northwest.
-% Return format is {DeltaRows, DeltaColumns}, where DeltaRows is the change in
-% the walker's row and DeltaColumns is the change in the walker's column.
-get_movement_delta(north) ->
-    {-1,  0};
-get_movement_delta(northeast) ->
-    {-1,  1};
-get_movement_delta(east) ->
-    { 0,  1};
-get_movement_delta(southeast) ->
-    { 1,  1};
-get_movement_delta(south) ->
-    { 1,  0};
-get_movement_delta(southwest) ->
-    { 1, -1};
-get_movement_delta(west) ->
-    { 0, -1};
-get_movement_delta(northwest) ->
-    {-1, -1}.
 
 % get_all_visible_map_cells(MapManager, ObserverPosition)
 % Returns a list of {Row, Column} pairs, each one corresponding to one map
@@ -217,7 +155,9 @@ get_movement_delta(northwest) ->
 get_all_visible_map_cells(MapManager, _ObserverPosition) ->
     % Currently, just return a list of all cells in the map.
     % FIXME: Do some semblance of actual line-of-sight calculations.
-    {NumberOfRows, NumberOfColumns} = map:get_map_size(MapManager),
+    {ok, MapSize} = inter_process:make_request(
+        MapManager, get_size, {}),
+    {NumberOfRows, NumberOfColumns} = MapSize,
     
     % Use list comprehensions to return the Cartesian product of
     % [0 .. NumberOfRows - 1] and [0 .. NumberOfColumns - 1].
@@ -253,8 +193,10 @@ send_map_cell_info_to(Recipient, CellPosition, MapManager, Origin) ->
     
     % Since we don't have any real information in MapCells yet anyway, just
     % send the whole thing for now.
-    MapCell = map:get_map_cell(MapManager, CellPosition),
-    Recipient ! {self(), update_map_cell, {RelativePosition, MapCell}}.
+    {ok, MapCell} = inter_process:make_request(
+        MapManager, get_cell, {CellPosition}),
+    inter_process:notify(
+        Recipient, update_map_cell, {RelativePosition, MapCell}).
 
 
 % send_updated_cell_info_to_all(Actors, Position, OldCell, NewCell)
@@ -279,8 +221,10 @@ send_updated_cell_info_to(Actor, Position, OldCell, NewCell) ->
         false ->
             % If Actor can see that OldCell and NewCell differ, then tell them
             % the cell changed.
-            ActorController = user_info_manager:get_actor_controller(Actor),
-            ActorOrigin = user_info_manager:get_actor_origin(Actor),
+            {ok, ActorController} = inter_process:make_request(
+                Actor, get_controller, {}),
+            {ok, ActorOrigin} = inter_process:make_request(
+                Actor, get_origin, {}),
             
             {OriginRow, OriginColumn} = ActorOrigin,
             {CellRow, CellColumn} = Position,
@@ -288,8 +232,8 @@ send_updated_cell_info_to(Actor, Position, OldCell, NewCell) ->
             RelativeColumn = CellColumn - OriginColumn,
             RelativePosition = {RelativeRow, RelativeColumn},
             
-            ActorController ! {self(), update_map_cell,
-                               {RelativePosition, NewCell}},
+            inter_process:notify(
+                ActorController, update_map_cell, {RelativePosition, NewCell}),
             
             ok
     ;

@@ -1,6 +1,6 @@
-% Record for storing information about a single user.
--record(user_info, {
-    % tag: the tag (unique identifier) of this user.
+% Record for storing information about a single player.
+-record(player_info, {
+    % tag: the tag (unique identifier) of this player.
     tag,
     
     % username: the name of this player. Currently unused.
