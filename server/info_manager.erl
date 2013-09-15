@@ -18,8 +18,9 @@
 % Currently, it's also responsible for executing actions (and checking whether
 % they're valid).
 % 
-% The initial arguments to this process should be one value:
-% MapManager, the PID of the map-managing process.
+% The initial arguments to this process should be two values:
+% MapManager, the PID of the map-managing process, and
+% TagAssignments, the PID of the tag assignment managing process.
 % 
 % For subsequent iterations, the Data tuple will contain two values:
 % the PID of the map-managing process and a dictionary mapping tags to
@@ -36,11 +37,7 @@
 % Makes blocking requests of the map manager and various actor info processes.
 
 % Just spawned.
-handler({}, setup, _, {MapManager}) ->
-    % Initialize the tag assignment manager.
-    TagAssignments = inter_process:spawn_with_handler(
-        {tag_assignment_manager, handler}, {}),
-    
+handler({}, setup, _, {MapManager, TagAssignments}) ->
     {handler_continue, {MapManager, TagAssignments}};
 
 % Put a new (Tag, ActorInfo) pair into the dictionary.

@@ -41,10 +41,12 @@ wait_for_connections() ->
     % PIDs as arguments.
     TagAllocator = inter_process:spawn_with_handler(
         {tag_allocator, handler}, {}),
+    TagAssignments = inter_process:spawn_with_handler(
+        {tag_assignment_manager, handler}, {}),
     MapManager = inter_process:spawn_with_handler(
         {map_manager, handler}, {{12, 16}}),
     InfoManager = inter_process:spawn_with_handler(
-        {info_manager, handler}, {MapManager}),
+        {info_manager, handler}, {MapManager, TagAssignments}),
     
     % The MapManager and InfoManager both need to send messages to each other.
     % Since one of them must be created first, we create the circular reference
