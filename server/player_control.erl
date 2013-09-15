@@ -50,7 +50,7 @@ handler({}, setup, _,
 % Some sort of command came through the client socket.
 % Decode it and handle it.
 % Data is the packet from the client, as a binary.
-% XXX: Instead of having all the code in handler/4, use a case and then have
+% FIXME: Instead of having all the code in handler/4, use a case and then have
 % separate functions that handle the various branches. That way we don't have
 % to do stupid things with the indentation to make the message command be far
 % over to the right in cases like this.

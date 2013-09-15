@@ -80,7 +80,7 @@ handler({MapManager, TagAssignments}, notification, remove_actor,
 % known information about the map.
 % ObserverTag should be the tag of the actor requesting the
 % information.
-% XXX: Make this a request instead of a notification.
+% FIXME: Make this a request instead of a notification.
 handler(Data = {MapManager, TagAssignments}, notification, get_map_all,
         {ObserverPid, ObserverTag}) ->
     % Look up the observer.

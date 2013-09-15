@@ -1,12 +1,15 @@
-% FIXME: Maybe rename this module to something more like just 'process'?
+% XXX: Maybe rename this module to something more like just 'process'?
+% Except don't actually use 'process'; vim thinks it's a special word.
 -module(inter_process).
 
 -export([
+% For external use
     spawn_with_handler/2,
-    main_loop/2,
     notify/3,
     make_request/3,
-    notify_all/3
+    notify_all/3,
+% For spawning
+    main_loop/2
 ]).
 
 % Amount of time after which to give up on waiting for a request, in
